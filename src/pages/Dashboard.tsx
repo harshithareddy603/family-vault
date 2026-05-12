@@ -38,7 +38,7 @@ const getDocumentLogo = (name: string, category: string, source: string | null) 
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { documents } = useDocuments();
+  const { documents, loading } = useDocuments();
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);

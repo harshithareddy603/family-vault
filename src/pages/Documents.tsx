@@ -32,7 +32,7 @@ const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, addDocument, deleteDocument, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
+  const { documents, loading, addDocument, deleteDocument, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -451,7 +451,7 @@ const Documents = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="self">Myself</SelectItem>
-                  {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} ({m.relation})</SelectItem>)}
+                  {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                   {members.length === 0 && (
                     <div className="p-2 w-full">
                       <Link to="/family">
