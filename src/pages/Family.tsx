@@ -16,7 +16,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocuments } from "@/hooks/useDocuments";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 const RELATIONS = ["Father", "Mother", "Spouse", "Son", "Daughter", "Brother", "Sister", "Other"];
@@ -29,6 +29,7 @@ const Family = () => {
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("Father");
   const [age, setAge] = useState<string>("");
+  const [viewingId, setViewingId] = useState<string | null>(null);
 
   useEffect(() => { document.title = "Family · Smart Docs"; }, []);
 
@@ -106,6 +107,11 @@ const Family = () => {
                     </Button>
                   </div>
                 </div>
+                <div className="mt-3 pt-3 border-t border-border flex justify-end">
+                  <Button variant="ghost" size="sm" className="h-8 text-xs text-primary" onClick={() => setViewingId(m.id)}>
+                    View Details <ChevronRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
               </Card>
             );
           })}
@@ -157,6 +163,56 @@ const Family = () => {
               </Button>
             </DrawerFooter>
           </form>
+        </DrawerContent>
+      </Drawer>
+
+      {/* View Details Drawer */}
+      <Drawer open={!!viewingId} onOpenChange={(v) => { if (!v) setViewingId(null); }}>
+        <DrawerContent>
+          {(() => {
+            const m = members.find(x => x.id === viewingId);
+            const mDocs = documents.filter(d => d.family_member_id === viewingId);
+            return (
+              <>
+                <DrawerHeader className="text-left">
+                  <DrawerTitle>{m?.name}'s Details</DrawerTitle>
+                  <DrawerDescription className="sr-only">
+                    Details and documents for {m?.name}
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="px-4 pb-8 max-h-[60vh] overflow-y-auto">
+                  <div className="mb-4 space-y-1">
+                    <p className="text-sm font-medium">Personal Info</p>
+                    <p className="text-xs text-muted-foreground">Relation: {m?.relation}</p>
+                    {m?.age && <p className="text-xs text-muted-foreground">Age: {m.age} years</p>}
+                  </div>
+                  
+                  <p className="text-sm font-medium mb-3">Documents ({mDocs.length})</p>
+                  {mDocs.length === 0 ? (
+                    <Card className="p-6 text-center shadow-none border-dashed">
+                      <p className="text-xs text-muted-foreground">No documents added yet.</p>
+                    </Card>
+                  ) : (
+                    <ul className="space-y-2">
+                      {mDocs.map(d => (
+                        <Card key={d.id} className="p-3 shadow-sm flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-xs truncate">{d.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{d.category}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DrawerContent>
       </Drawer>
     </AppLayout>
