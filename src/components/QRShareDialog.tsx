@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useDocuments } from "@/hooks/useDocuments";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,7 @@ export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps)
       <DialogContent className="sm:max-w-md text-center">
         <DialogHeader>
           <DialogTitle className="text-center">Share Document</DialogTitle>
+          <DialogDescription className="sr-only">Share this document via QR code or link</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center py-6 space-y-6">
           {loading ? (

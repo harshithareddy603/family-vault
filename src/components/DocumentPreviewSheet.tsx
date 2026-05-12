@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useDocuments } from "@/hooks/useDocuments";
 import { Loader2, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,10 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col items-center justify-center bg-background border-t rounded-t-xl">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Document Preview</SheetTitle>
+          <SheetDescription>Preview of your uploaded document.</SheetDescription>
+        </SheetHeader>
         <Button
           variant="ghost"
           size="icon"

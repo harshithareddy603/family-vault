@@ -64,7 +64,10 @@ export const useDocuments = () => {
 
   const getSignedUrl = async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
-    if (error) return null;
+    if (error) {
+      console.error("Error creating signed URL:", error);
+      return null;
+    }
     return data.signedUrl;
   };
 
