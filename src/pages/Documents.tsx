@@ -335,6 +335,13 @@ const Documents = () => {
                 </TouchableOpacity>
               </View>
 
+              {busy && (
+                <View style={styles.uploadProgressContainer}>
+                  <Text style={styles.uploadLabel}>Uploading document... {Math.round(uploadProgress * 100)}%</Text>
+                  <ProgressBar progress={uploadProgress} color="#3b82f6" style={styles.uploadBar} />
+                </View>
+              )}
+
               <TouchableOpacity 
                 style={[styles.saveButton, busy && styles.disabledButton]} 
                 onPress={submit}
@@ -738,6 +745,19 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  uploadProgressContainer: {
+    marginVertical: 16,
+  },
+  uploadLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  uploadBar: {
+    height: 6,
+    borderRadius: 3,
   },
 });
 

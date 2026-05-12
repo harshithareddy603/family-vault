@@ -14,8 +14,9 @@ export const SplashScreen = () => {
           clearInterval(timer);
           return 1;
         }
-        const diff = Math.random() * 0.2;
-        return Math.min(oldProgress + diff, 0.9); // Cap at 90% until actually loaded
+        const diff = Math.random() * 0.15;
+        const next = oldProgress + diff;
+        return next > 0.9 ? 0.9 : next; // Cap at 90%
       });
     }, 200);
 
@@ -37,6 +38,7 @@ export const SplashScreen = () => {
         <Text style={styles.title}>Smart Docs</Text>
         
         <View style={styles.progressContainer}>
+          <Text style={styles.loadingText}>Preparing your vault...</Text>
           <ProgressBar 
             progress={progress} 
             color="#FFFFFF" 
@@ -55,7 +57,7 @@ export const SplashScreen = () => {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#5b45ff',
+    backgroundColor: '#4a3aff', // Matching Dashboard brand color
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 50,
@@ -64,7 +66,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '80%',
+    width: '85%',
+    maxWidth: 400,
   },
   logoContainer: {
     position: 'relative',
@@ -89,9 +92,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   progressBar: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  loadingText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   footer: {
     paddingBottom: 40,
