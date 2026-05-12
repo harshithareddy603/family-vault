@@ -9,6 +9,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
   DrawerTrigger,
   DrawerFooter,
 } from "@/components/ui/drawer";
@@ -112,19 +113,25 @@ const Family = () => {
       )}
 
       {/* Floating action button */}
+      <Button
+        aria-label="Add family member"
+        className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+        onClick={(e) => {
+          e.currentTarget.blur();
+          setOpen(true);
+        }}
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
+
       <Drawer open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-        <DrawerTrigger asChild>
-          <Button
-            aria-label="Add family member"
-            className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
-            style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader className="text-left">
             <DrawerTitle>{editingId ? "Edit member" : "Add family member"}</DrawerTitle>
+            <DrawerDescription className="sr-only">
+              Fill out the details below to add or edit a family member.
+            </DrawerDescription>
           </DrawerHeader>
           <form onSubmit={submit} className="px-4 space-y-4 pb-2">
             <div className="space-y-2">
