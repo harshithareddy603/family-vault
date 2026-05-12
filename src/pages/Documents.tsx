@@ -31,6 +31,43 @@ import { saveAs } from "file-saver";
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
+const CircularProgress = ({ progress }: { progress: number }) => {
+  const radius = 9;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+  
+  return (
+    <div className="relative h-6 w-6 flex-shrink-0">
+      <svg className="h-6 w-6 -rotate-90">
+        <circle
+          cx="12"
+          cy="12"
+          r={radius}
+          className="text-primary/10"
+          strokeWidth="2.5"
+          stroke="currentColor"
+          fill="transparent"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r={radius}
+          className="text-primary transition-all duration-300"
+          strokeWidth="2.5"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-primary">
+        {Math.round(progress)}
+      </span>
+    </div>
+  );
+};
+
 const Documents = () => {
   const { members } = useFamily();
   const { documents, loading, addDocument, deleteDocument, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
@@ -199,15 +236,7 @@ const Documents = () => {
         </div>
         <div className="flex items-center gap-2">
           {uploadProgress > 0 && (
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-[10px] font-medium text-primary">{Math.round(uploadProgress)}%</span>
-              <div className="w-20 h-1.5 bg-primary/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
+            <CircularProgress progress={uploadProgress} />
           )}
           <Button 
             variant={selectionMode ? "default" : "outline"} 
@@ -476,17 +505,9 @@ const Documents = () => {
                 <Input type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="flex-1" />
                 {file && <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />}
                 {uploadProgress > 0 && uploadProgress < 100 && (
-                  <div className="flex-1 space-y-1">
-                    <div className="flex justify-between text-[10px] font-medium text-primary">
-                      <span>Uploading...</span>
-                      <span>{Math.round(uploadProgress)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <CircularProgress progress={uploadProgress} />
+                    <span className="text-[10px] font-medium text-primary animate-pulse">Uploading file...</span>
                   </div>
                 )}
               </div>

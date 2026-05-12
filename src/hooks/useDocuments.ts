@@ -38,6 +38,38 @@ export const useDocuments = () => {
     fetchDocuments();
   }, [fetchDocuments]);
 
+  // Background Pre-fetching logic
+  useEffect(() => {
+    const prefetch = async () => {
+      if (documents.length > 0 && !loading) {
+        // Pre-fetch the most recent 10 documents
+        const recentDocs = documents.slice(0, 10);
+        for (const doc of recentDocs) {
+          if (doc.file_url) {
+            const cached = await getFileLocal(doc.file_url);
+            if (!cached) {
+              const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
+              if (data?.signedUrl) {
+                try {
+                  const res = await fetch(data.signedUrl);
+                  const blob = await res.blob();
+                  await saveFileLocal(doc.file_url, blob);
+                  console.log("Pre-fetched and cached:", doc.name);
+                } catch (e) {
+                  console.warn("Prefetch failed for", doc.name);
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    // Wait 3 seconds after load before starting background sync
+    const timer = setTimeout(prefetch, 3000);
+    return () => clearTimeout(timer);
+  }, [documents, loading]);
+
   const uploadFile = async (file: File): Promise<string | null> => {
     if (!user) return null;
     const path = `${user.id}/${Date.now()}-${file.name}`;
