@@ -10,6 +10,7 @@ type AuthCtx = {
   signUp: (input: { email: string; password: string; name: string; phone?: string; photo: File }) => Promise<{ error: Error | null }>;
   signIn: (input: { email: string; password: string }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  checkEmailExists: (email: string) => Promise<boolean>;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -75,8 +76,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   }, []);
 
+  const checkEmailExists = useCallback(async (email: string) => {
+    try {
+      const { data, error } = await supabase.rpc('check_email_exists', { email_to_check: email });
+      if (error) {
+        console.error("Error checking email existence:", error);
+        return true; // Fallback to true to allow attempt if check fails
+      }
+      return !!data;
+    } catch (e) {
+      console.error("Exception checking email existence:", e);
+      return true;
+    }
+  }, []);
+
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signUp, signIn, signOut }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signUp, signIn, signOut, checkEmailExists }}>
       {loading ? <SplashScreen /> : children}
     </Ctx.Provider>
   );

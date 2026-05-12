@@ -96,3 +96,14 @@ create policy "Users update own document files"
 create policy "Users delete own document files"
   on storage.objects for delete
   using (bucket_id = 'documents' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- RPC to check if email exists (for specific login error messages)
+create or replace function public.check_email_exists(email_to_check text)
+returns boolean as $$
+begin
+  return exists (
+    select 1 from public.users 
+    where lower(email) = lower(email_to_check)
+  );
+end;
+$$ language plpgsql security definer;

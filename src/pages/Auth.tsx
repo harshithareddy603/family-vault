@@ -8,13 +8,16 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, checkEmailExists } = useAuth();
   const { isAuthenticated, loading } = useSession();
   const navigation = useNavigation<any>();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<any>(null);
@@ -46,27 +49,56 @@ const Auth = () => {
   };
 
   const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
     setBusy(true);
     if (mode === "login") {
+      // 1. Check if email exists
+      const exists = await checkEmailExists(email);
+      if (!exists) {
+        Alert.alert("Error", "Email not found. Please check your email or sign up.");
+        setBusy(false);
+        return;
+      }
+
+      // 2. Attempt sign in
       const { error } = await signIn({ email, password });
-      if (error) Alert.alert("Error", error.message);
+      if (error) {
+        // Since we already checked email existence, if it fails here, it's likely an incorrect password
+        Alert.alert("Error", "Incorrect password. Please try again.");
+      }
       else { 
         Alert.alert("Success", "Welcome back!"); 
         navigation.replace("Dashboard"); 
       }
     } else {
-      if (!photo) {
-        Alert.alert("Error", "Profile photo is required.");
+      if (!name || !phone || !photo) {
+        Alert.alert("Error", "Please fill in all fields and select a profile photo.");
         setBusy(false);
         return;
       }
+
+      if (password !== confirmPassword) {
+        Alert.alert("Error", "Passwords do not match.");
+        setBusy(false);
+        return;
+      }
+
+      if (password.length < 6) {
+        Alert.alert("Error", "Password must be at least 6 characters.");
+        setBusy(false);
+        return;
+      }
+
       if (photo.size > 3 * 1024 * 1024) {
         Alert.alert("Error", "Profile photo must be less than 3MB.");
         setBusy(false);
         return;
       }
-      // Note: The signUp hook expects a File object on web. 
-      // In React Native, the object structure above {uri, name, type} is typically handled by fetch/form-data.
+      
       const { error } = await signUp({ email, password, name, phone, photo: photo as any });
       if (error) Alert.alert("Error", error.message);
       else Alert.alert("Success", "Account created. Check your email to verify (if required).");
@@ -169,21 +201,50 @@ const Auth = () => {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password (6 digits)</Text>
-              <TextInput 
-                style={styles.input}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (mode === "login" && text.length === 6) {
-                    setTimeout(() => handleSubmit(), 100);
-                  }
-                }}
-                placeholder="Enter 6-digit password"
-                secureTextEntry
-                maxLength={6}
-              />
+              <Text style={styles.label}>{mode === "login" ? "Password (6 digits)" : "Password"}</Text>
+              <View style={styles.passwordInputContainer}>
+                <TextInput 
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (mode === "login" && text.length === 6) {
+                      setTimeout(() => handleSubmit(), 100);
+                    }
+                  }}
+                  placeholder="Enter password"
+                  secureTextEntry={!showPassword}
+                  maxLength={mode === "login" ? 6 : undefined}
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
+                >
+                  <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
+                </TouchableOpacity>
+              </View>
             </View>
+
+            {mode === "signup" && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <View style={styles.passwordInputContainer}>
+                  <TextInput 
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm password"
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Feather name={showConfirmPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             <TouchableOpacity 
               style={[styles.submitButton, busy && styles.disabledButton]}
@@ -337,6 +398,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0F172A',
     backgroundColor: '#F8FAFC',
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    overflow: 'hidden',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#0F172A',
+  },
+  eyeIcon: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   photoButton: {
     flexDirection: 'row',
