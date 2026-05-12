@@ -17,7 +17,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
   const route = useRoute();
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const notificationsCount = documents.filter((d) => {
     if (!d.expiry_date) return false;
@@ -102,11 +101,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </View>
         </View>
 
-        <NotificationsSheet 
-          documents={documents}
-          isOpen={showNotifications}
-          onClose={() => setShowNotifications(false)}
-        />
       </View>
     </SafeAreaView>
   );
