@@ -48,15 +48,17 @@ export const useDocuments = () => {
           if (doc.file_url) {
             const cached = await getFileLocal(doc.file_url);
             if (!cached) {
-              const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
-              if (data?.signedUrl) {
+              const { data, error } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
+              if (data?.signedUrl && !error) {
                 try {
                   const res = await fetch(data.signedUrl);
-                  const blob = await res.blob();
-                  await saveFileLocal(doc.file_url, blob);
-                  console.log("Pre-fetched and cached:", doc.name);
+                  if (res.ok) {
+                    const blob = await res.blob();
+                    await saveFileLocal(doc.file_url, blob);
+                    console.log("Pre-fetched and cached:", doc.name);
+                  }
                 } catch (e) {
-                  console.warn("Prefetch failed for", doc.name);
+                  // Ignore fetch errors in background
                 }
               }
             }
@@ -105,16 +107,18 @@ export const useDocuments = () => {
 
     // 2. Fetch from Supabase
     const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
-    if (error) {
-      console.error("Error creating signed URL:", error);
+    if (error || !data?.signedUrl) {
+      console.warn("Could not find file in storage:", path);
       return null;
     }
 
     // 3. Lazy cache: Download and save for next time
     try {
       const response = await fetch(data.signedUrl);
-      const blob = await response.blob();
-      await saveFileLocal(path, blob);
+      if (response.ok) {
+        const blob = await response.blob();
+        await saveFileLocal(path, blob);
+      }
     } catch (e) {
       console.error("Failed to lazy cache file", e);
     }
@@ -203,9 +207,16 @@ export const useDocuments = () => {
   const deleteDocument = async (id: string) => {
     const doc = documents.find((d) => d.id === id);
     if (doc?.file_url) {
-      await supabase.storage.from("documents").remove([doc.file_url]);
+      // 1. Delete from Supabase Storage
+      const { error: storageError } = await supabase.storage.from("documents").remove([doc.file_url]);
+      if (storageError) {
+        console.error("Storage deletion failed:", storageError);
+      }
+      
+      // 2. Delete from local cache
       await deleteFileLocal(doc.file_url);
     }
+    // 3. Delete from Database
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (!error) await fetchDocuments();
     return { error };
