@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/services/supabase";
 import { toast } from "sonner";
 import { LogOut, Key, User as UserIcon } from "lucide-react";
-import { AadhaarVerification } from "@/components/AadhaarVerification";
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -68,8 +67,6 @@ const ProfilePage = () => {
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
-
-        <AadhaarVerification />
 
         <Card>
           <CardHeader>

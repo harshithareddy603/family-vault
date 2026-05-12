@@ -6,17 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, CheckCircle2, Clock, ChevronRight, HardDrive, CloudDownload, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ChevronRight, HardDrive } from "lucide-react";
 import { DocumentStats } from "@/components/DocumentStats";
-import { DigiLockerModal } from "@/components/DigiLockerModal";
-import { SurepassImportModal } from "@/components/SurepassImportModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents } = useDocuments();
-  const [showDigiLocker, setShowDigiLocker] = useState(false);
-  const [showSurepass, setShowSurepass] = useState(false);
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
@@ -142,35 +138,9 @@ const Dashboard = () => {
             ))}
           </ul>
         )}
-        <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-3">
-          <Button 
-            variant="outline" 
-            className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 text-xs px-2"
-            onClick={() => setShowDigiLocker(true)}
-          >
-            <CloudDownload className="mr-1.5 h-3.5 w-3.5" /> DigiLocker
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 text-xs px-2"
-            onClick={() => setShowSurepass(true)}
-          >
-            <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Verify ID
-          </Button>
-        </div>
       </Card>
 
       <DocumentStats />
-      
-      <DigiLockerModal 
-        isOpen={showDigiLocker} 
-        onClose={() => setShowDigiLocker(false)} 
-      />
-
-      <SurepassImportModal
-        isOpen={showSurepass}
-        onClose={() => setShowSurepass(false)}
-      />
     </AppLayout>
   );
 };
