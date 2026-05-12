@@ -97,7 +97,7 @@ export const useDocuments = () => {
     return path;
   };
 
-  const getSignedUrl = async (path: string, expiresIn = 3600) => {
+  const getSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
     // 1. Check local cache first
     const localBlob = await getFileLocal(path);
     if (localBlob) {
@@ -112,21 +112,23 @@ export const useDocuments = () => {
       return null;
     }
 
-    // 3. Lazy cache: Download and save for next time
-    try {
-      const response = await fetch(data.signedUrl);
-      if (response.ok) {
-        const blob = await response.blob();
-        await saveFileLocal(path, blob);
+    // 3. Lazy cache: Download and save for next time in background
+    (async () => {
+      try {
+        const response = await fetch(data.signedUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          await saveFileLocal(path, blob);
+        }
+      } catch (e) {
+        console.error("Failed to lazy cache file", e);
       }
-    } catch (e) {
-      console.error("Failed to lazy cache file", e);
-    }
+    })();
 
     return data.signedUrl;
-  };
+  }, []);
 
-  const addDocument = async (input: {
+  const addDocument = useCallback(async (input: {
     name: string;
     category: string;
     expiry_date?: string | null;
@@ -193,18 +195,18 @@ export const useDocuments = () => {
       await fetchDocuments();
     }
     return { error };
-  };
+  }, [user, fetchDocuments]);
 
-  const updateDocument = async (id: string, patch: Partial<DocumentRow>) => {
+  const updateDocument = useCallback(async (id: string, patch: Partial<DocumentRow>) => {
     if (patch.expiry_date !== undefined) {
       patch.status = computeStatus(patch.expiry_date);
     }
     const { error } = await supabase.from("documents").update(patch).eq("id", id);
     if (!error) await fetchDocuments();
     return { error };
-  };
+  }, [fetchDocuments]);
 
-  const deleteDocument = async (id: string) => {
+  const deleteDocument = useCallback(async (id: string) => {
     const doc = documents.find((d) => d.id === id);
     if (doc?.file_url) {
       // 1. Delete from Supabase Storage
@@ -220,7 +222,7 @@ export const useDocuments = () => {
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (!error) await fetchDocuments();
     return { error };
-  };
+  }, [documents, fetchDocuments]);
 
   return {
     documents,
