@@ -102,10 +102,14 @@ const ProfilePage = () => {
 
       if (updateError) throw updateError;
 
-      // Force refresh the session to show the new avatar
-      await supabase.auth.refreshSession();
+      // Force refresh and get latest user data from server
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) console.error("Session refresh error:", refreshError);
+      
+      console.log("Avatar updated successfully. New URL:", publicUrl);
+      console.log("Current user metadata:", refreshData.user?.user_metadata);
 
-      Alert.alert("Success", "Profile picture updated! It may take a moment to reflect everywhere.");
+      Alert.alert("Success", "Profile picture updated! If it doesn't show on other devices, please sign out and sign back in on those devices.");
     } catch (error: any) {
       console.error("Avatar Update Error:", error);
       Alert.alert("Error", error.message || "Failed to update profile picture. Ensure the 'avatars' bucket exists in Supabase.");
