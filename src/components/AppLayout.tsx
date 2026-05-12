@@ -3,7 +3,6 @@ import React, { ReactNode, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useDocuments } from "../hooks/useDocuments";
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-import { NotificationsSheet } from "./NotificationsSheet";
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const links = [
@@ -20,7 +19,11 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const route = useRoute();
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const notificationsCount = documents.filter((d) => d.status === "expired" || d.status === "soon").length;
+  const notificationsCount = documents.filter((d) => {
+    if (!d.expiry_date) return false;
+    const days = Math.floor((new Date(d.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 7;
+  }).length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -42,7 +45,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => setShowNotifications(true)}
+              onPress={() => navigation.navigate("Notifications")}
             >
               <Feather name="bell" size={20} color="#374151" />
               {notificationsCount > 0 && (
