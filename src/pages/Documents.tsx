@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ const Documents = () => {
   useEffect(() => { document.title = "Documents · Smart Docs"; }, []);
 
   const reset = () => {
-    setName(""); setCategory("ID"); setExpiry(""); setOwner("self"); setPriority(false); setFile(null);
+    setName(""); setCategory("ID"); setExpiry(""); setOwner("self"); setFile(null);
   };
 
   const submit = async (e: React.FormEvent) => {

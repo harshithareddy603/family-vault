@@ -8,9 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocuments } from "@/hooks/useDocuments";
 import { toast } from "sonner";
-import { Database } from "@/types/supabase";
-
-type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
+import type { DocumentRow } from "@/services/supabase";
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
 

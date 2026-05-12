@@ -4,9 +4,7 @@ import { useDocuments } from "@/hooks/useDocuments";
 import { Loader2, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Database } from "@/types/supabase";
-
-type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
+import type { DocumentRow } from "@/services/supabase";
 
 interface DocumentPreviewSheetProps {
   document: DocumentRow | null;
