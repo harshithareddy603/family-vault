@@ -41,10 +41,9 @@ const Dashboard = () => {
         </h1>
       </div>
 
-      {/* Stat cards: 2x2 grid on mobile */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      {/* Stat cards: 3 cols */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <StatCard icon={FileText} label="Documents" value={documents.length} tone="primary" />
-        <StatCard icon={Users} label="Family" value={members.length} tone="accent" />
         <StatCard icon={Clock} label="Expiring" value={stats.soon} tone="warning" />
         <StatCard icon={AlertTriangle} label="Expired" value={stats.expired} tone="danger" />
       </div>
