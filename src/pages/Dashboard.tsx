@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +13,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { members } = useFamily();
   const { documents } = useDocuments();
+  const [selectedOwner, setSelectedOwner] = useState<string>("all");
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
@@ -21,6 +23,12 @@ const Dashboard = () => {
     const safe = documents.filter((d) => d.status === "safe").length;
     return { expired, soon, safe };
   }, [documents]);
+
+  const filteredDocuments = useMemo(() => {
+    if (selectedOwner === "all") return documents;
+    if (selectedOwner === "myself") return documents.filter((d) => d.family_member_id === null);
+    return documents.filter((d) => d.family_member_id === selectedOwner);
+  }, [documents, selectedOwner]);
 
   const name = user?.user_metadata?.name;
 
@@ -45,15 +53,29 @@ const Dashboard = () => {
       <Card className="p-4 shadow-card mb-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-base font-semibold">Recent documents</h2>
-          <Link to="/documents" className="text-xs text-primary font-medium flex items-center">
-            View all <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue placeholder="Owner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="myself">Myself</SelectItem>
+                {members.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Link to="/documents" className="text-xs text-primary font-medium flex items-center ml-1">
+              All <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
-        {documents.length === 0 ? (
+        {filteredDocuments.length === 0 ? (
           <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
         ) : (
           <ul className="space-y-2">
-            {documents.slice(0, 4).map((d) => (
+            {filteredDocuments.slice(0, 5).map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50">
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{d.name}</p>
@@ -64,41 +86,6 @@ const Dashboard = () => {
                 <StatusPill status={d.status} />
               </li>
             ))}
-          </ul>
-        )}
-      </Card>
-
-      {/* Family members */}
-      <Card className="p-4 shadow-card">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-base font-semibold">Family</h2>
-          <Link to="/family" className="text-xs text-primary font-medium flex items-center">
-            Manage <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        {members.length === 0 ? (
-          <EmptyHint text="No family members yet." cta="Add member" to="/family" />
-        ) : (
-          <ul className="space-y-2">
-            {members.slice(0, 4).map((m) => {
-              const count = documents.filter((d) => d.family_member_id === m.id).length;
-              return (
-                <li key={m.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground text-sm font-semibold">
-                      {m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{m.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {m.relation}{m.age ? ` · ${m.age} yrs` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">{count} docs</span>
-                </li>
-              );
-            })}
           </ul>
         )}
       </Card>
