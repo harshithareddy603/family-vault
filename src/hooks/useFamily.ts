@@ -25,21 +25,19 @@ export const useFamily = () => {
     fetchMembers();
   }, [fetchMembers]);
 
-  const addMember = async (input: { name: string; relation: string; age?: number | null; blood_group?: string | null; address?: string | null; }) => {
+  const addMember = async (input: { name: string; relation: string; age?: number | null; }) => {
     if (!user) return { error: new Error("Not signed in") };
     const { error } = await supabase.from("family_members").insert({
       user_id: user.id,
       name: input.name,
       relation: input.relation,
       age: input.age ?? null,
-      blood_group: input.blood_group ?? null,
-      address: input.address ?? null,
     });
     if (!error) await fetchMembers();
     return { error };
   };
 
-  const updateMember = async (id: string, patch: Partial<Pick<FamilyMember, "name" | "relation" | "age" | "blood_group" | "address">>) => {
+  const updateMember = async (id: string, patch: Partial<Pick<FamilyMember, "name" | "relation" | "age">>) => {
     const { error } = await supabase.from("family_members").update(patch).eq("id", id);
     if (!error) await fetchMembers();
     return { error };

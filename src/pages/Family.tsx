@@ -49,8 +49,6 @@ const Family = () => {
       name, 
       relation, 
       age: age ? parseInt(age, 10) : null,
-      blood_group: bloodGroup || null,
-      address: address || null,
     };
     const { error } = editingId
       ? await updateMember(editingId, payload)
