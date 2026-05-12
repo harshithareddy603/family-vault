@@ -3,6 +3,9 @@ import { supabase, type DocumentRow, type DocStatus } from "../services/supabase
 import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
 
 const computeStatus = (expiry: string | null): DocStatus => {
   if (!expiry) return "safe";
@@ -41,7 +44,7 @@ export const useDocuments = () => {
   // Background Pre-fetching logic
   useEffect(() => {
     const prefetch = async () => {
-      if (documents.length > 0 && !loading) {
+      if (!isWeb && documents.length > 0 && !loading) {
         // Pre-fetch the most recent 10 documents
         const recentDocs = documents.slice(0, 10);
         for (const doc of recentDocs) {
@@ -106,7 +109,7 @@ export const useDocuments = () => {
     // 1. Check local cache first
     let cachedUri = await getFileLocal(path);
     
-    if (cachedUri) {
+    if (!isWeb && cachedUri) {
       console.log("Serving from local cache:", path);
       return cachedUri;
     }
@@ -118,19 +121,20 @@ export const useDocuments = () => {
       return null;
     }
 
-    // 3. Download and cache immediately
-    try {
-      const downloadRes = await FileSystem.downloadAsync(
-        data.signedUrl,
-        FileSystem.documentDirectory + 'temp-' + path.replace(/\//g, '-')
-      );
-      if (downloadRes.status === 200) {
-        await saveFileLocal(path, downloadRes.uri);
-        console.log("Downloaded and cached for future use:", path);
-        return downloadRes.uri;
+    if (!isWeb) {
+      try {
+        const downloadRes = await FileSystem.downloadAsync(
+          data.signedUrl,
+          FileSystem.documentDirectory + 'temp-' + path.replace(/\//g, '-')
+        );
+        if (downloadRes.status === 200) {
+          await saveFileLocal(path, downloadRes.uri);
+          console.log("Downloaded and cached for future use:", path);
+          return downloadRes.uri;
+        }
+      } catch (e) {
+        console.error("Download failed, falling back to signed URL", e);
       }
-    } catch (e) {
-      console.error("Download failed, falling back to signed URL", e);
     }
 
     // Fallback: Return the signed URL directly if caching failed

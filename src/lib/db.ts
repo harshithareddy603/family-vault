@@ -1,8 +1,11 @@
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 
-const BASE_DIR = FileSystem.documentDirectory + 'files/';
+const isWeb = Platform.OS === 'web';
+const BASE_DIR = isWeb ? '' : (FileSystem.documentDirectory + 'files/');
 
 const ensureDir = async () => {
+  if (isWeb) return;
   const dirInfo = await FileSystem.getInfoAsync(BASE_DIR);
   if (!dirInfo.exists) {
     await FileSystem.makeDirectoryAsync(BASE_DIR, { intermediates: true });
@@ -10,17 +13,14 @@ const ensureDir = async () => {
 };
 
 export const saveFileLocal = async (id: string, content: any) => {
+  if (isWeb) return false;
   try {
     await ensureDir();
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
     const fileUri = BASE_DIR + fileName;
     
-    // In RN, content might already be a local URI or we might need to copy it
     if (typeof content === 'string' && content.startsWith('file://')) {
       await FileSystem.copyAsync({ from: content, to: fileUri });
-    } else {
-      // Fallback or handle other types
-      console.warn("Unsupported file content type for local save");
     }
     return true;
   } catch (e) {
@@ -30,6 +30,7 @@ export const saveFileLocal = async (id: string, content: any) => {
 };
 
 export const getFileLocal = async (id: string): Promise<string | null> => {
+  if (isWeb) return null;
   try {
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
     const fileUri = BASE_DIR + fileName;
@@ -42,6 +43,7 @@ export const getFileLocal = async (id: string): Promise<string | null> => {
 };
 
 export const deleteFileLocal = async (id: string) => {
+  if (isWeb) return false;
   try {
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
     const fileUri = BASE_DIR + fileName;
