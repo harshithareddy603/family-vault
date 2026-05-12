@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useSession } from "../hooks/useSession";
@@ -22,6 +22,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -50,55 +51,61 @@ const Auth = () => {
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields.");
+      setError("Please fill in all fields.");
       return;
     }
 
+    setError(null);
     setBusy(true);
-    if (mode === "login") {
-      // 1. Check if email exists
-      const exists = await checkEmailExists(email);
-      if (!exists) {
-        Alert.alert("Error", "Email not found. Please check your email or sign up.");
-        setBusy(false);
-        return;
-      }
+    
+    try {
+      if (mode === "login") {
+        // 1. Check if email exists
+        const exists = await checkEmailExists(email);
+        if (!exists) {
+          setError("Email not found. Please check your email or sign up.");
+          setBusy(false);
+          return;
+        }
 
-      // 2. Attempt sign in
-      const { error } = await signIn({ email, password });
-      if (error) {
-        // Since we already checked email existence, if it fails here, it's likely an incorrect password
-        Alert.alert("Error", "Incorrect password. Please try again.");
-      }
-      else { 
-        Alert.alert("Success", "Welcome back!"); 
-        navigation.replace("Dashboard"); 
-      }
-    } else {
-      if (!name || !phone || !photo) {
-        Alert.alert("Error", "Please fill in all fields and select a profile photo.");
-        setBusy(false);
-        return;
-      }
+        // 2. Attempt sign in
+        const { error: signInError } = await signIn({ email, password });
+        if (signInError) {
+          setError("Incorrect password. Please try again.");
+        } else { 
+          navigation.replace("Dashboard"); 
+        }
+      } else {
+        if (!name || !phone || !photo) {
+          setError("Please fill in all fields and select a profile photo.");
+          setBusy(false);
+          return;
+        }
 
-      if (password !== confirmPassword) {
-        Alert.alert("Error", "Passwords do not match.");
-        setBusy(false);
-        return;
-      }
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          setBusy(false);
+          return;
+        }
 
-
-      if (photo.size > 3 * 1024 * 1024) {
-        Alert.alert("Error", "Profile photo must be less than 3MB.");
-        setBusy(false);
-        return;
+        if (photo.size > 3 * 1024 * 1024) {
+          setError("Profile photo must be less than 3MB.");
+          setBusy(false);
+          return;
+        }
+        
+        const { error: signUpError } = await signUp({ email, password, name, phone, photo: photo as any });
+        if (signUpError) {
+          setError(signUpError.message);
+        } else {
+          Alert.alert("Success", "Account created. Check your email to verify (if required).");
+        }
       }
-      
-      const { error } = await signUp({ email, password, name, phone, photo: photo as any });
-      if (error) Alert.alert("Error", error.message);
-      else Alert.alert("Success", "Account created. Check your email to verify (if required).");
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   if (loading) return (
@@ -117,7 +124,7 @@ const Auth = () => {
           <View style={styles.logoIcon}>
             <MaterialCommunityIcons name="shield-check" size={32} color="#fff" />
           </View>
-          <Text style={styles.appName}>Smart Docs</Text>
+          <Text style={appNameStyle()}>Smart Docs</Text>
           <Text style={styles.appSubtitle}>Your family's documents, safely organized.</Text>
         </View>
 
@@ -132,16 +139,22 @@ const Auth = () => {
         )}
 
         <View style={styles.authCard}>
+          {error && (
+            <View style={styles.errorBanner}>
+              <Feather name="alert-circle" size={16} color="#B91C1C" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
           <View style={styles.tabs}>
             <TouchableOpacity 
               style={[styles.tab, mode === "login" && styles.activeTab]}
-              onPress={() => setMode("login")}
+              onPress={() => { setMode("login"); setError(null); }}
             >
               <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.tab, mode === "signup" && styles.activeTab]}
-              onPress={() => setMode("signup")}
+              onPress={() => { setMode("signup"); setError(null); }}
             >
               <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
             </TouchableOpacity>
@@ -177,9 +190,6 @@ const Auth = () => {
                       {photo ? "Photo Selected" : "Choose Profile Photo"}
                     </Text>
                   </TouchableOpacity>
-                  {photo && photo.size > 3 * 1024 * 1024 && (
-                    <Text style={styles.errorText}>File size exceeds 3MB limit.</Text>
-                  )}
                 </View>
               </>
             )}
@@ -255,6 +265,12 @@ const Auth = () => {
   );
 };
 
+const appNameStyle = () => ({
+  fontSize: 28,
+  fontWeight: 'bold',
+  color: '#0F172A',
+} as const);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -287,11 +303,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0F172A',
   },
   appSubtitle: {
     fontSize: 14,
@@ -419,14 +430,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#F8FAFC',
+    marginTop: 8,
   },
   photoButtonText: {
     fontSize: 14,
     color: '#64748B',
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
   errorText: {
-    fontSize: 12,
-    color: '#EF4444',
+    color: '#B91C1C',
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
   submitButton: {
     backgroundColor: '#3b82f6',
@@ -434,7 +458,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 16,
   },
   submitButtonText: {
     color: '#FFFFFF',
