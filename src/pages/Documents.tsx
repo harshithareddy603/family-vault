@@ -19,7 +19,7 @@ const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, loading, addDocument, deleteDocument, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
+  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -33,6 +33,7 @@ const Documents = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const [shareDoc, setShareDoc] = useState<DocumentRow | null>(null);
   const [editDoc, setEditDoc] = useState<DocumentRow | null>(null);
@@ -254,10 +255,21 @@ const Documents = () => {
                       onPress={() => {
                         Alert.alert(
                           "Delete Document",
-                          "Are you sure?",
+                          "Are you sure you want to delete this document? This action cannot be undone.",
                           [
                             { text: "Cancel", style: "cancel" },
-                            { text: "Delete", style: "destructive", onPress: () => deleteDocument(d.id) }
+                            { 
+                              text: "Delete", 
+                              style: "destructive", 
+                              onPress: async () => {
+                                const { error } = await deleteDocument(d.id);
+                                if (error) {
+                                  Alert.alert("Error", "Failed to delete document: " + error.message);
+                                } else {
+                                  Alert.alert("Success", "Document deleted successfully.");
+                                }
+                              } 
+                            }
                           ]
                         );
                       }}
@@ -340,7 +352,33 @@ const Documents = () => {
           onSelectAll={() => setSelectedIds(new Set(processedDocuments.map(d => d.id)))}
           onDeselectAll={() => setSelectedIds(new Set())}
           onDownload={() => Alert.alert("Download", "Bulk download is available on web.")}
+          onDelete={() => {
+            Alert.alert(
+              "Delete Multiple",
+              `Are you sure you want to delete ${selectedIds.size} documents? This action cannot be undone.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { 
+                  text: "Delete", 
+                  style: "destructive", 
+                  onPress: async () => {
+                    setIsDeletingBulk(true);
+                    const { error } = await deleteDocuments(Array.from(selectedIds));
+                    setIsDeletingBulk(false);
+                    if (error) {
+                      Alert.alert("Error", "Failed to delete documents: " + error.message);
+                    } else {
+                      Alert.alert("Success", `${selectedIds.size} documents deleted.`);
+                      setSelectedIds(new Set());
+                      setSelectionMode(false);
+                    }
+                  } 
+                }
+              ]
+            );
+          }}
           isDownloading={isDownloadingZip}
+          isDeleting={isDeletingBulk}
         />
       )}
     </AppLayout>

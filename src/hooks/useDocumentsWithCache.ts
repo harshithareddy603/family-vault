@@ -60,5 +60,6 @@ export const useDocumentsWithCache = () => {
     documents: activeDocuments,
     isOffline,
     uploadProgress: docsHook.uploadProgress,
+    deleteDocuments: docsHook.deleteDocuments,
   };
 };

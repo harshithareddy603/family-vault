@@ -8,7 +8,9 @@ interface BulkActionBarProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onDownload: () => void;
+  onDelete: () => void;
   isDownloading: boolean;
+  isDeleting?: boolean;
 }
 
 export const BulkActionBar = ({
@@ -17,7 +19,9 @@ export const BulkActionBar = ({
   onSelectAll,
   onDeselectAll,
   onDownload,
+  onDelete,
   isDownloading,
+  isDeleting,
 }: BulkActionBarProps) => {
   if (selectedCount === 0) return null;
 
@@ -43,18 +47,33 @@ export const BulkActionBar = ({
           )}
         </TouchableOpacity>
       </View>
-      <TouchableOpacity 
-        onPress={onDownload} 
-        disabled={isDownloading}
-        style={[styles.primaryButton, isDownloading && styles.disabledButton]}
-      >
-        {isDownloading ? (
-          <ActivityIndicator size="small" color="#fff" style={styles.icon} />
-        ) : (
-          <Feather name="download" size={16} color="#fff" style={styles.icon} />
-        )}
-        <Text style={styles.primaryButtonText}>Download ZIP</Text>
-      </TouchableOpacity>
+      <View style={styles.rightSection}>
+        <TouchableOpacity 
+          onPress={onDownload} 
+          disabled={isDownloading || isDeleting}
+          style={[styles.primaryButton, (isDownloading || isDeleting) && styles.disabledButton]}
+        >
+          {isDownloading ? (
+            <ActivityIndicator size="small" color="#fff" style={styles.icon} />
+          ) : (
+            <Feather name="download" size={16} color="#fff" style={styles.icon} />
+          )}
+          <Text style={styles.primaryButtonText}>Download ZIP</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          onPress={onDelete} 
+          disabled={isDownloading || isDeleting}
+          style={[styles.deleteButton, (isDownloading || isDeleting) && styles.disabledButton]}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#fff" style={styles.icon} />
+          ) : (
+            <Feather name="trash-2" size={16} color="#fff" style={styles.icon} />
+          )}
+          <Text style={styles.primaryButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -115,6 +134,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    marginLeft: 8,
+  },
+  deleteButton: {
+    backgroundColor: '#EF4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   disabledButton: {
     opacity: 0.5,

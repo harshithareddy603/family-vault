@@ -87,11 +87,6 @@ const Auth = () => {
         return;
       }
 
-      if (password.length < 6) {
-        Alert.alert("Error", "Password must be at least 6 characters.");
-        setBusy(false);
-        return;
-      }
 
       if (photo.size > 3 * 1024 * 1024) {
         Alert.alert("Error", "Profile photo must be less than 3MB.");
@@ -201,20 +196,14 @@ const Auth = () => {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{mode === "login" ? "Password (6 digits)" : "Password"}</Text>
+              <Text style={styles.label}>Password</Text>
               <View style={styles.passwordInputContainer}>
                 <TextInput 
                   style={styles.passwordInput}
                   value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (mode === "login" && text.length === 6) {
-                      setTimeout(() => handleSubmit(), 100);
-                    }
-                  }}
+                  onChangeText={setPassword}
                   placeholder="Enter password"
                   secureTextEntry={!showPassword}
-                  maxLength={mode === "login" ? 6 : undefined}
                 />
                 <TouchableOpacity 
                   onPress={() => setShowPassword(!showPassword)}

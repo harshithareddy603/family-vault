@@ -196,21 +196,48 @@ export const useDocuments = () => {
   }, [fetchDocuments]);
 
   const deleteDocument = useCallback(async (id: string) => {
-    const doc = documents.find((d) => d.id === id);
-    if (doc?.file_url) {
-      // 1. Delete from Supabase Storage
-      const { error: storageError } = await supabase.storage.from("documents").remove([doc.file_url]);
-      if (storageError) {
-        console.error("Storage deletion failed:", storageError);
+    try {
+      const doc = documents.find((d) => d.id === id);
+      if (doc?.file_url) {
+        // 1. Delete from Supabase Storage
+        const { error: storageError } = await supabase.storage.from("documents").remove([doc.file_url]);
+        if (storageError) {
+          console.error("Storage deletion failed:", storageError);
+          // We continue even if storage delete fails to avoid orphaned DB records
+        }
+        
+        // 2. Delete from local cache
+        await deleteFileLocal(doc.file_url);
+      }
+      // 3. Delete from Database
+      const { error } = await supabase.from("documents").delete().eq("id", id);
+      if (!error) await fetchDocuments();
+      return { error };
+    } catch (e: any) {
+      console.error("Delete failed:", e);
+      return { error: e };
+    }
+  }, [documents, fetchDocuments]);
+
+  const deleteDocuments = useCallback(async (ids: string[]) => {
+    try {
+      const docsToDelete = documents.filter(d => ids.includes(d.id));
+      const filePaths = docsToDelete.map(d => d.file_url).filter(Boolean) as string[];
+      
+      if (filePaths.length > 0) {
+        await supabase.storage.from("documents").remove(filePaths);
+        for (const path of filePaths) {
+          await deleteFileLocal(path);
+        }
       }
       
-      // 2. Delete from local cache
-      await deleteFileLocal(doc.file_url);
+      const { error } = await supabase.from("documents").delete().in("id", ids);
+      if (!error) await fetchDocuments();
+      return { error };
+    } catch (e: any) {
+      console.error("Bulk delete failed:", e);
+      return { error: e };
     }
-    // 3. Delete from Database
-    const { error } = await supabase.from("documents").delete().eq("id", id);
-    if (!error) await fetchDocuments();
-    return { error };
   }, [documents, fetchDocuments]);
 
   return {
@@ -221,6 +248,7 @@ export const useDocuments = () => {
     addDocument,
     updateDocument,
     deleteDocument,
+    deleteDocuments,
     getSignedUrl,
     uploadProgress,
   };
