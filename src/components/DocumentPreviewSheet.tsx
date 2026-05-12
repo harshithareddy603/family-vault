@@ -72,7 +72,18 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
         ) : signedUrl ? (
           <div className="w-full h-full relative overflow-hidden flex items-center justify-center p-4 pt-16">
             {isPdf ? (
-              <iframe src={signedUrl} className="w-full h-full rounded-md border" />
+              <object 
+                data={signedUrl} 
+                type="application/pdf" 
+                className="w-full h-full rounded-md border"
+              >
+                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                  <p className="mb-4 text-muted-foreground">Mobile PDF preview may not be supported in this browser.</p>
+                  <Button onClick={() => window.open(signedUrl, "_blank")}>
+                    <Download className="mr-2 h-4 w-4" /> Open PDF
+                  </Button>
+                </div>
+              </object>
             ) : isImage ? (
               <img src={signedUrl} alt={document.name} className="max-w-full max-h-full object-contain rounded-md" />
             ) : (
