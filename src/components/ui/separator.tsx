@@ -1,20 +1,34 @@
 import * as React from "react";
-import * as SeparatorPrimitive from "@radix-ui/react-separator";
+import { View, StyleSheet, ViewStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
+const Separator = ({ 
+  orientation = "horizontal", 
+  style 
+}: { 
+  orientation?: "horizontal" | "vertical"; 
+  style?: ViewStyle 
+}) => {
+  return (
+    <View style={[
+      styles.base,
+      orientation === "horizontal" ? styles.horizontal : styles.vertical,
+      style
+    ]} />
+  );
+};
 
-const Separator = React.forwardRef<
-  React.ElementRef<typeof SeparatorPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
->(({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
-  <SeparatorPrimitive.Root
-    ref={ref}
-    decorative={decorative}
-    orientation={orientation}
-    className={cn("shrink-0 bg-border", orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]", className)}
-    {...props}
-  />
-));
-Separator.displayName = SeparatorPrimitive.Root.displayName;
+const styles = StyleSheet.create({
+  base: {
+    backgroundColor: "#e2e8f0",
+  },
+  horizontal: {
+    height: 1,
+    width: "100%",
+  },
+  vertical: {
+    height: "100%",
+    width: 1,
+  },
+});
 
 export { Separator };

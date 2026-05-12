@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useDocuments } from "@/hooks/useDocuments";
-import { Loader2, Download, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import type { DocumentRow } from "@/services/supabase";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Linking, Alert } from 'react-native'
+import React, { useEffect, useState } from "react";
+import { useDocuments } from "../hooks/useDocuments";
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import type { DocumentRow } from "../services/supabase";
 
 interface DocumentPreviewSheetProps {
   document: DocumentRow | null;
@@ -24,15 +22,14 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
         setSignedUrl(null);
         try {
           // getSignedUrl uses 3600 seconds by default or similar.
-          // Note: The useDocuments hook already implements getSignedUrl.
           const url = await getSignedUrl(document.file_url!);
           if (url) {
             setSignedUrl(url);
           } else {
-            toast.error("Failed to load preview");
+            Alert.alert("Error", "Failed to load preview");
           }
         } catch (error) {
-          toast.error("Error loading preview");
+          Alert.alert("Error", "Error loading preview");
         } finally {
           setLoading(false);
         }
@@ -48,67 +45,178 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const isPdf = ext === "pdf";
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col items-center justify-center bg-background border-t rounded-t-xl">
-        <SheetHeader className="sr-only">
-          <SheetTitle>Document Preview</SheetTitle>
-          <SheetDescription>Preview of your uploaded document.</SheetDescription>
-        </SheetHeader>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-4 z-50 rounded-full bg-background/50 backdrop-blur-sm"
-          onClick={onClose}
-        >
-          <X className="h-5 w-5" />
-          <span className="sr-only">Close</span>
-        </Button>
+    <Modal
+      visible={isOpen}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.content}>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Feather name="x" size={24} color="#0F172A" />
+          </TouchableOpacity>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading preview...</p>
-          </div>
-        ) : signedUrl ? (
-          <div className="w-full h-full relative overflow-hidden flex items-center justify-center p-4 pt-16">
-            {isPdf ? (
-              <object 
-                data={signedUrl} 
-                type="application/pdf" 
-                className="w-full h-full rounded-md border"
-              >
-                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                  <p className="mb-4 text-muted-foreground">Mobile PDF preview may not be supported in this browser.</p>
-                  <Button onClick={() => window.open(signedUrl, "_blank")}>
-                    <Download className="mr-2 h-4 w-4" /> Open PDF
-                  </Button>
-                </div>
-              </object>
-            ) : isImage ? (
-              <img src={signedUrl} alt={document.name} className="max-w-full max-h-full object-contain rounded-md" />
-            ) : (
-              <div className="flex flex-col items-center justify-center space-y-4 text-center p-6">
-                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-2">
-                  <span className="text-2xl font-bold text-muted-foreground">{ext?.toUpperCase() || "?"}</span>
-                </div>
-                <p className="font-medium text-lg">Preview not available</p>
-                <p className="text-sm text-muted-foreground max-w-sm mb-4">
-                  This file type cannot be previewed directly in the browser. You can download it to view it locally.
-                </p>
-                <Button onClick={() => window.open(signedUrl, "_blank")}>
-                  <Download className="mr-2 h-4 w-4" /> Download File
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6">
-            <p className="text-muted-foreground">
-              {document?.file_url ? "Failed to load preview URL." : "No file attached to this document."}
-            </p>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          <Text style={styles.title}>Document Preview</Text>
+
+          {loading ? (
+            <View style={styles.centerContent}>
+              <ActivityIndicator size="large" color="#3b82f6" />
+              <Text style={styles.loadingText}>Loading preview...</Text>
+            </View>
+          ) : signedUrl ? (
+            <View style={styles.previewContainer}>
+              {isPdf ? (
+                <View style={styles.centerContent}>
+                  <MaterialCommunityIcons name="file-pdf-box" size={64} color="#EF4444" />
+                  <Text style={styles.pdfText}>PDF Preview is not supported directly. Please open in browser.</Text>
+                  <TouchableOpacity 
+                    style={styles.primaryButton}
+                    onPress={() => Linking.openURL(signedUrl)}
+                  >
+                    <Feather name="download" size={16} color="#fff" style={styles.icon} />
+                    <Text style={styles.primaryButtonText}>Open PDF</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : isImage ? (
+                <Image 
+                  source={{ uri: signedUrl }} 
+                  style={styles.image} 
+                  resizeMode="contain" 
+                />
+              ) : (
+                <View style={styles.centerContent}>
+                  <View style={styles.fallbackIconContainer}>
+                    <Text style={styles.fallbackExt}>{ext?.toUpperCase() || "?"}</Text>
+                  </View>
+                  <Text style={styles.notAvailableTitle}>Preview not available</Text>
+                  <Text style={styles.notAvailableSubtitle}>
+                    This file type cannot be previewed directly. You can download it to view it.
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.primaryButton}
+                    onPress={() => Linking.openURL(signedUrl)}
+                  >
+                    <Feather name="download" size={16} color="#fff" style={styles.icon} />
+                    <Text style={styles.primaryButtonText}>Download File</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.centerContent}>
+              <Text style={styles.errorText}>
+                {document?.file_url ? "Failed to load preview URL." : "No file attached to this document."}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  content: {
+    height: '90%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    zIndex: 50,
+    padding: 8,
+    backgroundColor: 'rgba(241, 245, 249, 0.8)',
+    borderRadius: 20,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 20,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+  },
+  previewContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  pdfText: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  icon: {
+    marginRight: 8,
+  },
+  fallbackIconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  fallbackExt: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#64748B',
+  },
+  notAvailableTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  notAvailableSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  errorText: {
+    color: '#64748B',
+    textAlign: 'center',
+  },
+});

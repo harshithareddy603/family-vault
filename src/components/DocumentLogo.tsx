@@ -1,14 +1,21 @@
-import { useState } from "react";
-import { FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard } from "lucide-react";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native'
+import React, { useState } from "react";
+import { 
+  MaterialCommunityIcons, 
+  FontAwesome5, 
+  Ionicons, 
+  Feather, 
+  FontAwesome 
+} from '@expo/vector-icons';
 
 interface DocumentLogoProps {
   name: string;
   category: string;
   source: string | null;
-  className?: string;
+  size?: number;
 }
 
-export const DocumentLogo = ({ name, category, source, className = "h-6 w-6" }: DocumentLogoProps) => {
+export const DocumentLogo = ({ name, category, source, size = 24 }: DocumentLogoProps) => {
   const [imgError, setImgError] = useState(false);
   const n = name.toLowerCase();
   const c = category.toLowerCase();
@@ -40,47 +47,109 @@ export const DocumentLogo = ({ name, category, source, className = "h-6 w-6" }: 
 
   if (url && !imgError) {
     return (
-      <div className={`${className} bg-white rounded-sm p-0.5 flex items-center justify-center shadow-sm overflow-hidden border border-slate-100`}>
-        <img 
-          src={url} 
-          alt={category} 
-          className="w-full h-full object-contain"
-          referrerPolicy="no-referrer"
+      <View style={[styles.container, { width: size, height: size }, styles.whiteBg]}>
+        <Image 
+          source={{ uri: url }} 
+          style={styles.image}
+          resizeMode="contain"
           onError={() => setImgError(true)}
         />
-      </div>
+      </View>
     );
   }
 
   // Fallback Icons with premium colors
   if (s === "aadhaar" || n.includes("aadhaar") || n.includes("adhar") || c.includes("aadhaar")) {
-    return <div className={`${className} bg-purple-50 text-purple-600 rounded-sm flex items-center justify-center`}><Fingerprint className="h-4 w-4" /></div>;
+    return (
+      <View style={[styles.container, { width: size, height: size }, styles.purpleBg]}>
+        <MaterialCommunityIcons name="fingerprint" size={size * 0.6} color="#9333ea" />
+      </View>
+    );
   }
   if (s === "pan" || n.includes("pan card") || (n.includes("pan") && n.length < 10) || c.includes("pan")) {
-    return <div className={`${className} bg-blue-50 text-blue-600 rounded-sm flex items-center justify-center`}><Landmark className="h-4 w-4" /></div>;
+    return (
+      <View style={[styles.container, { width: size, height: size }, styles.blueBg]}>
+        <MaterialCommunityIcons name="bank" size={size * 0.6} color="#2563eb" />
+      </View>
+    );
   }
   if (s === "passport" || n.includes("passport") || c.includes("passport")) {
-    return <div className={`${className} bg-sky-50 text-sky-600 rounded-sm flex items-center justify-center`}><Globe className="h-4 w-4" /></div>;
+    return (
+      <View style={[styles.container, { width: size, height: size }, styles.skyBg]}>
+        <Ionicons name="globe-outline" size={size * 0.6} color="#0284c7" />
+      </View>
+    );
   }
   if (s === "voter_id" || n.includes("voter") || c.includes("voter")) {
-    return <div className={`${className} bg-teal-50 text-teal-600 rounded-sm flex items-center justify-center`}><CreditCard className="h-4 w-4" /></div>;
+    return (
+      <View style={[styles.container, { width: size, height: size }, styles.tealBg]}>
+        <FontAwesome name="id-card-o" size={size * 0.6} color="#0d9488" />
+      </View>
+    );
   }
   if (s === "license" || n.includes("license") || c.includes("driving")) {
-    return <div className={`${className} bg-amber-50 text-amber-600 rounded-sm flex items-center justify-center`}><Car className="h-4 w-4" /></div>;
+    return (
+      <View style={[styles.container, { width: size, height: size }, styles.amberBg]}>
+        <FontAwesome5 name="car" size={size * 0.6} color="#d97706" />
+      </View>
+    );
   }
 
   // Category fallbacks
   const getIcon = () => {
-    if (c === "medical" || n.includes("medical") || n.includes("health")) return { icon: <HeartPulse className="h-4 w-4" />, color: "bg-rose-50 text-rose-500" };
-    if (c === "property" || n.includes("house") || n.includes("land")) return { icon: <Building2 className="h-4 w-4" />, color: "bg-indigo-50 text-indigo-500" };
-    if (c === "education" || n.includes("degree") || n.includes("marks")) return { icon: <GraduationCap className="h-4 w-4" />, color: "bg-emerald-50 text-emerald-500" };
-    if (c === "insurance" || n.includes("policy")) return { icon: <Car className="h-4 w-4" />, color: "bg-amber-50 text-amber-500" };
-    if (c === "id") return { icon: <Fingerprint className="h-4 w-4" />, color: "bg-slate-50 text-slate-400" };
-    return { icon: <FileText className="h-4 w-4" />, color: "bg-blue-50 text-blue-500" };
+    if (c === "medical" || n.includes("medical") || n.includes("health")) {
+      return { icon: <MaterialCommunityIcons name="heart-pulse" size={size * 0.6} color="#f43f5e" />, colorStyle: styles.roseBg };
+    }
+    if (c === "property" || n.includes("house") || n.includes("land")) {
+      return { icon: <MaterialCommunityIcons name="office-building" size={size * 0.6} color="#6366f1" />, colorStyle: styles.indigoBg };
+    }
+    if (c === "education" || n.includes("degree") || n.includes("marks")) {
+      return { icon: <FontAwesome5 name="graduation-cap" size={size * 0.6} color="#10b981" />, colorStyle: styles.emeraldBg };
+    }
+    if (c === "insurance" || n.includes("policy")) {
+      return { icon: <FontAwesome5 name="car" size={size * 0.6} color="#f59e0b" />, colorStyle: styles.amberBg };
+    }
+    if (c === "id") {
+      return { icon: <MaterialCommunityIcons name="fingerprint" size={size * 0.6} color="#94a3b8" />, colorStyle: styles.slateBg };
+    }
+    return { icon: <Feather name="file-text" size={size * 0.6} color="#3b82f6" />, colorStyle: styles.lightBlueBg };
   };
 
-  const { icon, color } = getIcon();
-  return <div className={`${className} ${color} rounded-sm flex items-center justify-center shadow-sm`}>{icon}</div>;
-  
-  return <FileText className={`${className} text-blue-500`} />;
+  const { icon, colorStyle } = getIcon();
+  return (
+    <View style={[styles.container, { width: size, height: size }, colorStyle]}>
+      {icon}
+    </View>
+  );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(241, 245, 249, 1)',
+    overflow: 'hidden',
+  },
+  whiteBg: { backgroundColor: '#FFFFFF' },
+  purpleBg: { backgroundColor: '#FAF5FF' },
+  blueBg: { backgroundColor: '#EFF6FF' },
+  skyBg: { backgroundColor: '#F0F9FF' },
+  tealBg: { backgroundColor: '#F0FDFA' },
+  amberBg: { backgroundColor: '#FFFBEB' },
+  roseBg: { backgroundColor: '#FFF1F2' },
+  indigoBg: { backgroundColor: '#EEF2FF' },
+  emeraldBg: { backgroundColor: '#ECFDF5' },
+  slateBg: { backgroundColor: '#F8FAFC' },
+  lightBlueBg: { backgroundColor: '#EFF6FF' },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+});

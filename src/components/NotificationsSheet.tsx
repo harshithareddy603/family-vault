@@ -1,6 +1,7 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import type { DocumentRow } from "@/services/supabase";
-import { Badge } from "@/components/ui/badge";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal } from 'react-native'
+import React from "react";
+import type { DocumentRow } from "../services/supabase";
+import { Feather } from '@expo/vector-icons';
 
 interface NotificationsSheetProps {
   documents: DocumentRow[];
@@ -28,40 +29,158 @@ export const NotificationsSheet = ({ documents, isOpen, onClose }: Notifications
     });
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-[85vw] sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Notifications</SheetTitle>
-        </SheetHeader>
-        <div className="mt-6 space-y-4">
-          {notifications.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">No expiring documents 🎉</p>
-            </div>
-          ) : (
-            notifications.map((d) => (
-              <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-card">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{d.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-[10px] h-5 px-1.5">{d.category}</Badge>
-                    <span className="text-[11px] text-muted-foreground">
-                      {d.expiry_date}
-                    </span>
-                  </div>
-                </div>
-                {d.status === "expired" ? (
-                  <Badge variant="destructive" className="shrink-0 text-[10px] h-5 px-1.5 bg-danger">EXPIRED</Badge>
-                ) : (
-                  <Badge variant="secondary" className="shrink-0 text-[10px] h-5 px-1.5 bg-warning text-warning-foreground border-warning">
-                    {d.daysLeft} days left
-                  </Badge>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <Modal
+      visible={isOpen}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Notifications</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Feather name="x" size={24} color="#0F172A" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.list}>
+            {notifications.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No expiring documents 🎉</Text>
+              </View>
+            ) : (
+              notifications.map((d) => (
+                <View key={d.id} style={styles.notificationItem}>
+                  <View style={styles.itemMain}>
+                    <Text style={styles.itemName} numberOfLines={1}>{d.name}</Text>
+                    <View style={styles.itemMeta}>
+                      <View style={styles.categoryBadge}>
+                        <Text style={styles.categoryBadgeText}>{d.category}</Text>
+                      </View>
+                      <Text style={styles.expiryText}>{d.expiry_date}</Text>
+                    </View>
+                  </View>
+                  {d.status === "expired" ? (
+                    <View style={styles.expiredBadge}>
+                      <Text style={styles.badgeText}>EXPIRED</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.soonBadge}>
+                      <Text style={styles.soonBadgeText}>{d.daysLeft} days left</Text>
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  content: {
+    height: '80%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  list: {
+    flex: 1,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
+  },
+  itemMain: {
+    flex: 1,
+    marginRight: 12,
+  },
+  itemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  categoryBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginRight: 8,
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  expiryText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  expiredBadge: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  soonBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  soonBadgeText: {
+    color: '#92400E',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+});

@@ -1,84 +1,104 @@
 import * as React from "react";
-import { Drawer as DrawerPrimitive } from "vaul";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ViewStyle, TextStyle, Dimensions } from "react-native";
 
-import { cn } from "@/lib/utils";
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const Drawer = ({ shouldScaleBackground = true, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
-);
-Drawer.displayName = "Drawer";
-
-const DrawerTrigger = DrawerPrimitive.Trigger;
-
-const DrawerPortal = DrawerPrimitive.Portal;
-
-const DrawerClose = DrawerPrimitive.Close;
-
-const DrawerOverlay = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
-));
-DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
-
-const DrawerContent = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <DrawerPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
-        className,
-      )}
-      {...props}
+const Drawer = ({ open, onOpenChange, children }: { 
+  open?: boolean; 
+  onOpenChange?: (open: boolean) => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <Modal
+      visible={open}
+      transparent
+      animationType="slide"
+      onRequestClose={() => onOpenChange?.(false)}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
       {children}
-    </DrawerPrimitive.Content>
-  </DrawerPortal>
-));
-DrawerContent.displayName = "DrawerContent";
+    </Modal>
+  );
+};
 
-const DrawerHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)} {...props} />
+const DrawerTrigger = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
+  <TouchableOpacity onPress={onPress}>{children}</TouchableOpacity>
 );
-DrawerHeader.displayName = "DrawerHeader";
 
-const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mt-auto flex flex-col gap-2 p-4", className)} {...props} />
+const DrawerContent = ({ children, style, onClose }: { children: React.ReactNode; style?: ViewStyle; onClose?: () => void }) => (
+  <View style={styles.overlay}>
+    <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+    <View style={[styles.content, style]}>
+      <View style={styles.handle} />
+      {children}
+    </View>
+  </View>
 );
-DrawerFooter.displayName = "DrawerFooter";
 
-const DrawerTitle = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-));
-DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
+const DrawerHeader = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.header, style]}>{children}</View>
+);
 
-const DrawerDescription = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
-));
-DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
+const DrawerFooter = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.footer, style]}>{children}</View>
+);
+
+const DrawerTitle = ({ children, style }: { children: React.ReactNode; style?: TextStyle }) => (
+  <Text style={[styles.title, style]}>{children}</Text>
+);
+
+const DrawerDescription = ({ children, style }: { children: React.ReactNode; style?: TextStyle }) => (
+  <Text style={[styles.description, style]}>{children}</Text>
+);
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  content: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    minHeight: SCREEN_HEIGHT * 0.4,
+    maxHeight: SCREEN_HEIGHT * 0.9,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#0f172a",
+    textAlign: "center",
+  },
+  description: {
+    fontSize: 14,
+    color: "#64748b",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  footer: {
+    marginTop: 24,
+    gap: 12,
+  },
+});
 
 export {
   Drawer,
-  DrawerPortal,
-  DrawerOverlay,
   DrawerTrigger,
-  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerFooter,

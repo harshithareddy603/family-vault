@@ -1,6 +1,7 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+/**
+ * Merges React Native styles.
+ * In React Native, style props can accept an array of style objects.
+ */
+export function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).flat();
 }

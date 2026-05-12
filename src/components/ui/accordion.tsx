@@ -1,52 +1,86 @@
 import * as React from "react";
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { ChevronDown } from "lucide-react";
+import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager, ViewStyle, TextStyle } from "react-native";
+import { Feather } from "@expo/vector-icons";
 
-import { cn } from "@/lib/utils";
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-const Accordion = AccordionPrimitive.Root;
+const Accordion = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.accordion, style]}>{children}</View>
+);
 
-const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <AccordionPrimitive.Item ref={ref} className={cn("border-b", className)} {...props} />
-));
-AccordionItem.displayName = "AccordionItem";
+const AccordionItem = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.item, style]}>{children}</View>
+);
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Header className="flex">
-    <AccordionPrimitive.Trigger
-      ref={ref}
-      className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
-    </AccordionPrimitive.Trigger>
-  </AccordionPrimitive.Header>
-));
-AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
-
-const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Content
-    ref={ref}
-    className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
-    {...props}
+const AccordionTrigger = ({ 
+  children, 
+  isOpen, 
+  onToggle,
+  style 
+}: { 
+  children: React.ReactNode; 
+  isOpen?: boolean;
+  onToggle?: () => void;
+  style?: ViewStyle;
+}) => (
+  <TouchableOpacity 
+    style={[styles.trigger, style]} 
+    onPress={() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      onToggle?.();
+    }}
   >
-    <div className={cn("pb-4 pt-0", className)}>{children}</div>
-  </AccordionPrimitive.Content>
-));
+    <Text style={styles.triggerText}>{children}</Text>
+    <Feather 
+      name="chevron-down" 
+      size={16} 
+      color="#64748B" 
+      style={{ transform: [{ rotate: isOpen ? "180deg" : "0deg" }] }} 
+    />
+  </TouchableOpacity>
+);
 
-AccordionContent.displayName = AccordionPrimitive.Content.displayName;
+const AccordionContent = ({ 
+  children, 
+  isOpen,
+  style 
+}: { 
+  children: React.ReactNode; 
+  isOpen?: boolean;
+  style?: ViewStyle;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <View style={[styles.content, style]}>
+      {children}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  accordion: {
+    width: "100%",
+  },
+  item: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  trigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+  },
+  triggerText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#0f172a",
+  },
+  content: {
+    paddingBottom: 16,
+  },
+});
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };

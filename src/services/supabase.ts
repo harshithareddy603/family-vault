@@ -1,26 +1,27 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const url = process.env.VITE_SUPABASE_URL || "";
+const anonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 
 if (!isSupabaseConfigured) {
   // eslint-disable-next-line no-console
   console.warn(
-    "[Smart Docs] Supabase env vars missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Workspace → Build Secrets."
+    "[Smart Docs] Supabase env vars missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
   );
 }
 
 export const supabase: SupabaseClient = createClient(
-  url ?? "https://placeholder.supabase.co",
-  anonKey ?? "placeholder-anon-key",
+  url || "https://placeholder.supabase.co",
+  anonKey || "placeholder-anon-key",
   {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      detectSessionInUrl: false,
+      storage: AsyncStorage,
     },
   }
 );

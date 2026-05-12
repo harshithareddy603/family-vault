@@ -32,16 +32,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp: AuthCtx["signUp"] = useCallback(async ({ email, password, name, phone, photo }) => {
-    const redirectTo = `${window.location.origin}/`;
-    
-    // First, upload the photo to the avatars bucket
-    const fileExt = photo.name.split('.').pop();
+    // photo in RN is { uri, name, type }
+    const fileExt = (photo as any).name ? (photo as any).name.split('.').pop() : 'jpg';
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
+    const formData = new FormData();
+    formData.append('file', {
+      uri: (photo as any).uri,
+      name: fileName,
+      type: (photo as any).type || `image/${fileExt}`,
+    } as any);
+
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, photo);
+      .upload(filePath, formData);
 
     if (uploadError) {
       return { error: new Error(`Failed to upload photo: ${uploadError.message}`) };
@@ -55,7 +60,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: redirectTo,
         data: { name, phone: phone ?? "", avatar_url: publicUrl },
       },
     });

@@ -1,23 +1,48 @@
 import * as React from "react";
-import * as SliderPrimitive from "@radix-ui/react-slider";
+import { View, StyleSheet, ViewStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
+const Slider = ({ style }: { style?: ViewStyle }) => {
+  return (
+    <View style={[styles.root, style]}>
+      <View style={styles.track}>
+        <View style={styles.range} />
+      </View>
+      <View style={styles.thumb} />
+    </View>
+  );
+};
 
-const Slider = React.forwardRef<
-  React.ElementRef<typeof SliderPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <SliderPrimitive.Root
-    ref={ref}
-    className={cn("relative flex w-full touch-none select-none items-center", className)}
-    {...props}
-  >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary">
-      <SliderPrimitive.Range className="absolute h-full bg-primary" />
-    </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
-  </SliderPrimitive.Root>
-));
-Slider.displayName = SliderPrimitive.Root.displayName;
+const styles = StyleSheet.create({
+  root: {
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    height: 20,
+  },
+  track: {
+    height: 4,
+    width: "100%",
+    backgroundColor: "#e2e8f0",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  range: {
+    height: "100%",
+    width: "50%",
+    backgroundColor: "#3b82f6",
+  },
+  thumb: {
+    position: "absolute",
+    left: "50%",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    borderWidth: 2,
+    borderColor: "#3b82f6",
+    marginLeft: -10,
+  },
+});
 
 export { Slider };

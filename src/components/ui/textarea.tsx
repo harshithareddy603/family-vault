@@ -1,21 +1,43 @@
 import * as React from "react";
+import { TextInput, StyleSheet, ViewStyle, TextStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
+export interface TextareaProps {
+  value?: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
+  style?: ViewStyle;
+  inputStyle?: TextStyle;
+  numberOfLines?: number;
+}
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
-
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => {
+const Textarea = ({ value, onChangeText, placeholder, style, inputStyle, numberOfLines = 4 }: TextareaProps) => {
   return (
-    <textarea
-      className={cn(
-        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      ref={ref}
-      {...props}
+    <TextInput
+      style={[styles.textarea, style, inputStyle]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      multiline={true}
+      numberOfLines={numberOfLines}
+      textAlignVertical="top"
+      placeholderTextColor="#94a3b8"
     />
   );
+};
+
+const styles = StyleSheet.create({
+  textarea: {
+    minHeight: 80,
+    width: "100%",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: "#0f172a",
+  },
 });
-Textarea.displayName = "Textarea";
 
 export { Textarea };

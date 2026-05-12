@@ -1,54 +1,54 @@
 import { useState, useEffect } from "react";
 import { useDocuments } from "./useDocuments";
-import type { DocumentRow } from "@/services/supabase";
+import type { DocumentRow } from "../services/supabase";
 import { useAuth } from "./useAuth";
+import NetInfo from "@react-native-community/netinfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const useDocumentsWithCache = () => {
   const { user } = useAuth();
   const docsHook = useDocuments();
   const [cachedDocs, setCachedDocs] = useState<DocumentRow[]>([]);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOffline(!state.isConnected);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    // Load from cache on mount
-    if (user) {
-      const saved = localStorage.getItem(`smartdocs_cache_${user.id}`);
-      if (saved) {
-        try {
-          setCachedDocs(JSON.parse(saved));
-        } catch (e) {
-          console.error("Failed to parse cached documents", e);
+    const loadCache = async () => {
+      if (user) {
+        const saved = await AsyncStorage.getItem(`smartdocs_cache_${user.id}`);
+        if (saved) {
+          try {
+            setCachedDocs(JSON.parse(saved));
+          } catch (e) {
+            console.error("Failed to parse cached documents", e);
+          }
+        } else {
+          setCachedDocs([]);
         }
       } else {
         setCachedDocs([]);
       }
-    } else {
-      setCachedDocs([]);
-    }
+    };
+    loadCache();
   }, [user?.id]);
 
   useEffect(() => {
-    // Save to cache when documents are fetched successfully
-    if (user && docsHook.documents.length > 0 && !docsHook.loading) {
-      localStorage.setItem(`smartdocs_cache_${user.id}`, JSON.stringify(docsHook.documents));
-      setCachedDocs(docsHook.documents);
-    } else if (user && docsHook.documents.length === 0 && !docsHook.loading) {
-      localStorage.removeItem(`smartdocs_cache_${user.id}`);
-      setCachedDocs([]);
-    }
+    const saveCache = async () => {
+      if (user && docsHook.documents.length > 0 && !docsHook.loading) {
+        await AsyncStorage.setItem(`smartdocs_cache_${user.id}`, JSON.stringify(docsHook.documents));
+        setCachedDocs(docsHook.documents);
+      } else if (user && docsHook.documents.length === 0 && !docsHook.loading) {
+        await AsyncStorage.removeItem(`smartdocs_cache_${user.id}`);
+        setCachedDocs([]);
+      }
+    };
+    saveCache();
   }, [docsHook.documents, docsHook.loading]);
 
   const activeDocuments = isOffline || (docsHook.loading && docsHook.documents.length === 0)

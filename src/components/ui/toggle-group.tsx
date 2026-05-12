@@ -1,49 +1,93 @@
 import * as React from "react";
-import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group";
-import { type VariantProps } from "class-variance-authority";
+import { View, StyleSheet, ViewStyle } from "react-native";
+import { Toggle } from "@/components/ui/toggle";
 
-import { cn } from "@/lib/utils";
-import { toggleVariants } from "@/components/ui/toggle";
+const ToggleGroup = ({ 
+  children, 
+  style, 
+  value, 
+  onValueChange,
+  variant = "default",
+  size = "default"
+}: { 
+  children: React.ReactNode; 
+  style?: ViewStyle;
+  value?: string | string[];
+  onValueChange?: (value: any) => void;
+  variant?: "default" | "outline";
+  size?: "default" | "sm" | "lg";
+}) => {
+  const isSingle = typeof value === "string" || value === undefined;
 
-const ToggleGroupContext = React.createContext<VariantProps<typeof toggleVariants>>({
-  size: "default",
-  variant: "default",
-});
-
-const ToggleGroup = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> & VariantProps<typeof toggleVariants>
->(({ className, variant, size, children, ...props }, ref) => (
-  <ToggleGroupPrimitive.Root ref={ref} className={cn("flex items-center justify-center gap-1", className)} {...props}>
-    <ToggleGroupContext.Provider value={{ variant, size }}>{children}</ToggleGroupContext.Provider>
-  </ToggleGroupPrimitive.Root>
-));
-
-ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName;
-
-const ToggleGroupItem = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> & VariantProps<typeof toggleVariants>
->(({ className, children, variant, size, ...props }, ref) => {
-  const context = React.useContext(ToggleGroupContext);
+  const handleToggle = (itemValue: string) => {
+    if (isSingle) {
+      onValueChange?.(itemValue);
+    } else {
+      const values = Array.isArray(value) ? value : [];
+      if (values.includes(itemValue)) {
+        onValueChange?.(values.filter(v => v !== itemValue));
+      } else {
+        onValueChange?.([...values, itemValue]);
+      }
+    }
+  };
 
   return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size,
-        }),
-        className,
-      )}
-      {...props}
+    <View style={[styles.group, style]}>
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          const itemValue = (child.props as any).value;
+          const isPressed = isSingle ? value === itemValue : (value as string[]).includes(itemValue);
+          
+          return React.cloneElement(child as React.ReactElement<any>, {
+            pressed: isPressed,
+            onPressedChange: () => handleToggle(itemValue),
+            variant,
+            size,
+          });
+        }
+        return child;
+      })}
+    </View>
+  );
+};
+
+const ToggleGroupItem = ({ 
+  children,
+  pressed,
+  onPressedChange,
+  variant,
+  size,
+  style 
+}: { 
+  value: string;
+  children: React.ReactNode;
+  pressed?: boolean;
+  onPressedChange?: () => void;
+  variant?: "default" | "outline";
+  size?: "default" | "sm" | "lg";
+  style?: ViewStyle;
+}) => {
+  return (
+    <Toggle
+      pressed={pressed}
+      onPressedChange={onPressedChange}
+      variant={variant}
+      size={size}
+      style={style}
     >
       {children}
-    </ToggleGroupPrimitive.Item>
+    </Toggle>
   );
-});
+};
 
-ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName;
+const styles = StyleSheet.create({
+  group: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+});
 
 export { ToggleGroup, ToggleGroupItem };

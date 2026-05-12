@@ -1,24 +1,10 @@
-import { useEffect, useState } from "react";
-import { AppLayout } from "@/components/AppLayout";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerTrigger,
-  DrawerFooter,
-} from "@/components/ui/drawer";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFamily } from "@/hooks/useFamily";
-import { useDocuments } from "@/hooks/useDocuments";
-import { Plus, Pencil, Trash2, Users, FileText, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert } from 'react-native'
+import React, { useEffect, useState } from "react";
+import { AppLayout } from "../components/AppLayout";
+import { useFamily } from "../hooks/useFamily";
+import { useDocuments } from "../hooks/useDocuments";
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Checkbox } from 'react-native-paper';
 
 const RELATIONS = ["Father", "Mother", "Spouse", "Son", "Daughter", "Brother", "Sister", "Other"];
 
@@ -31,24 +17,23 @@ const Family = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
-  useEffect(() => { document.title = "Family · Smart Docs"; }, []);
-
   const reset = () => { setName(""); setEditingId(null); setTermsAccepted(false); };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!termsAccepted) {
-      toast.error("Please accept the terms to continue.");
+      Alert.alert("Error", "Please accept the terms to continue.");
       return;
     }
-    const payload = { 
-      name, 
-    };
+    const payload = { name };
     const { error } = editingId
       ? await updateMember(editingId, payload)
       : await addMember(payload);
-    if (error) toast.error(error.message);
-    else { toast.success(editingId ? "Member updated" : "Member added"); setOpen(false); reset(); }
+    if (error) Alert.alert("Error", error.message);
+    else { 
+      Alert.alert("Success", editingId ? "Member updated" : "Member added"); 
+      setOpen(false); 
+      reset(); 
+    }
   };
 
   const startEdit = (id: string) => {
@@ -61,159 +46,422 @@ const Family = () => {
 
   return (
     <AppLayout>
-      <div className="mb-5">
-        <h1 className="font-display text-2xl font-bold">Family Doc's</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage your loved ones.</p>
-      </div>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Family Doc's</Text>
+          <Text style={styles.subtitle}>Manage your loved ones.</Text>
+        </View>
 
-      {members.length === 0 ? (
-        <Card className="p-10 text-center shadow-card">
-          <Users className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">No family members yet.</p>
-          <p className="text-xs text-muted-foreground mt-1">Tap the + button to add one.</p>
-        </Card>
-      ) : (
-        <ul className="space-y-3">
-          {members.map((m) => {
-            const docs = documents.filter((d) => d.family_member_id === m.id);
-            const alerts = docs.filter((d) => d.status !== "safe").length;
-            return (
-              <Card key={m.id} className="p-4 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-semibold">
-                    {m.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">{m.name}</p>
+        {members.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Feather name="users" size={48} color="#CBD5E1" />
+            <Text style={styles.emptyText}>No family members yet.</Text>
+            <Text style={styles.emptySubtext}>Tap the + button to add one.</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.list}>
+            {members.map((m) => {
+              const docs = documents.filter((d) => d.family_member_id === m.id);
+              const alerts = docs.filter((d) => d.status !== "safe").length;
+              return (
+                <View key={m.id} style={styles.card}>
+                  <View style={styles.cardRow}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
+                      <View style={styles.memberStats}>
+                        <Text style={styles.statsText}>{docs.length} docs</Text>
+                        {alerts > 0 && (
+                          <Text style={styles.alertText}>{alerts} alert{alerts > 1 ? "s" : ""}</Text>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.actionColumn}>
+                      <TouchableOpacity style={styles.iconButton} onPress={() => startEdit(m.id)}>
+                        <Feather name="edit-2" size={16} color="#64748B" />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.iconButton} 
+                        onPress={() => {
+                          Alert.alert(
+                            "Remove Member",
+                            "Are you sure?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              { text: "Remove", style: "destructive", onPress: () => deleteMember(m.id) }
+                            ]
+                          );
+                        }}
+                      >
+                        <Feather name="trash-2" size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => setViewingId(m.id)}>
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                    <Feather name="chevron-right" size={14} color="#3b82f6" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
 
-                    <div className="flex items-center gap-3 mt-1 text-[11px]">
-                      <span className="text-muted-foreground">{docs.length} docs</span>
-                      {alerts > 0 && (
-                        <span className="text-warning font-medium">
-                          {alerts} alert{alerts > 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(m.id)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-danger"
-                      onClick={async () => {
-                        const { error } = await deleteMember(m.id);
-                        if (error) toast.error(error.message); else toast.success("Removed");
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-border flex justify-end">
-                  <Button variant="ghost" size="sm" className="h-8 text-xs text-primary" onClick={() => setViewingId(m.id)}>
-                    View Details <ChevronRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-        </ul>
-      )}
+      <TouchableOpacity style={styles.fab} onPress={() => setOpen(true)}>
+        <Feather name="plus" size={24} color="#FFF" />
+      </TouchableOpacity>
 
-      {/* Floating action button */}
-      <Button
-        aria-label="Add family member"
-        className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
-        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-        onClick={(e) => {
-          e.currentTarget.blur();
-          setOpen(true);
-        }}
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
-
-      <Drawer open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-        <DrawerContent>
-          <DrawerHeader className="text-left">
-            <DrawerTitle>{editingId ? "Edit member" : "Add family member"}</DrawerTitle>
-            <DrawerDescription className="sr-only">
-              Fill out the details below to add or edit a family member.
-            </DrawerDescription>
-          </DrawerHeader>
-          <form onSubmit={submit} className="px-4 space-y-4 pb-2">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-            <div className="flex items-start gap-2 pt-2">
-              <Checkbox id="terms" checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(!!v)} required />
-              <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug">
+      {/* Add/Edit Modal */}
+      <Modal visible={open} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{editingId ? "Edit Member" : "Add Family Member"}</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name</Text>
+              <TextInput 
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter name"
+              />
+            </View>
+            <View style={styles.termsContainer}>
+              <Checkbox.Android
+                status={termsAccepted ? 'checked' : 'unchecked'}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                color="#3b82f6"
+              />
+              <Text style={styles.termsText}>
                 Please try to save correct details for accessing the files easily.
-              </label>
-            </div>
-            <DrawerFooter className="px-0">
-              <Button type="submit" className="w-full bg-gradient-hero" disabled={!termsAccepted}>
-                {editingId ? "Save changes" : "Add member"}
-              </Button>
-            </DrawerFooter>
-          </form>
-        </DrawerContent>
-      </Drawer>
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.saveButton, !termsAccepted && styles.disabledButton]} 
+              onPress={submit}
+              disabled={!termsAccepted}
+            >
+              <Text style={styles.saveButtonText}>{editingId ? "Save Changes" : "Add Member"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => { setOpen(false); reset(); }}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-      {/* View Details Drawer */}
-      <Drawer open={!!viewingId} onOpenChange={(v) => { if (!v) setViewingId(null); }}>
-        <DrawerContent>
-          {(() => {
-            const m = members.find(x => x.id === viewingId);
-            const mDocs = documents.filter(d => d.family_member_id === viewingId);
-            return (
-              <>
-                <DrawerHeader className="text-left">
-                  <DrawerTitle>{m?.name}'s Details</DrawerTitle>
-                  <DrawerDescription className="sr-only">
-                    Details and documents for {m?.name}
-                  </DrawerDescription>
-                </DrawerHeader>
-                <div className="px-4 pb-8 max-h-[60vh] overflow-y-auto">
-                  <div className="mb-4 space-y-1">
-                    <p className="text-sm font-medium">Personal Info</p>
-                    <p className="text-xs text-muted-foreground">Name: {m?.name}</p>
-                  </div>
-                  
-                  <p className="text-sm font-medium mb-3">Documents ({mDocs.length})</p>
-                  {mDocs.length === 0 ? (
-                    <Card className="p-6 text-center shadow-none border-dashed">
-                      <p className="text-xs text-muted-foreground">No documents added yet.</p>
-                    </Card>
-                  ) : (
-                    <ul className="space-y-2">
-                      {mDocs.map(d => (
-                        <Card key={d.id} className="p-3 shadow-sm flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                              <FileText className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-xs truncate">{d.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{d.category}</p>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
-            );
-          })()}
-        </DrawerContent>
-      </Drawer>
+      {/* View Details Modal */}
+      <Modal visible={!!viewingId} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {(() => {
+              const m = members.find(x => x.id === viewingId);
+              const mDocs = documents.filter(d => d.family_member_id === viewingId);
+              return (
+                <View>
+                  <Text style={styles.modalTitle}>{m?.name}'s Details</Text>
+                  <ScrollView style={styles.detailsList}>
+                    <Text style={styles.detailsSectionTitle}>Documents ({mDocs.length})</Text>
+                    {mDocs.length === 0 ? (
+                      <View style={styles.emptyDocs}>
+                        <Text style={styles.emptyDocsText}>No documents added yet.</Text>
+                      </View>
+                    ) : (
+                      mDocs.map(d => (
+                        <View key={d.id} style={styles.docItem}>
+                          <View style={styles.docIcon}>
+                            <Feather name="file-text" size={16} color="#3b82f6" />
+                          </View>
+                          <View style={styles.docContent}>
+                            <Text style={styles.docName} numberOfLines={1}>{d.name}</Text>
+                            <Text style={styles.docCategory}>{d.category}</Text>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </ScrollView>
+                  <TouchableOpacity style={styles.closeBtn} onPress={() => setViewingId(null)}>
+                    <Text style={styles.closeBtnText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
     </AppLayout>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  list: {
+    paddingBottom: 100,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  memberInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  memberStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statsText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginRight: 12,
+  },
+  alertText: {
+    fontSize: 12,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  actionColumn: {
+    gap: 8,
+  },
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewDetailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  viewDetailsText: {
+    fontSize: 13,
+    color: '#3b82f6',
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#F8FAFC',
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    paddingRight: 24,
+  },
+  termsText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginLeft: 8,
+    lineHeight: 18,
+  },
+  saveButton: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#64748B',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  detailsList: {
+    maxHeight: 400,
+  },
+  detailsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+  emptyDocs: {
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+  },
+  emptyDocsText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  docItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  docIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  docName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  docCategory: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  closeBtn: {
+    marginTop: 20,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  closeBtnText: {
+    color: '#3b82f6',
+    fontWeight: '600',
+  },
+});
 
 export default Family;

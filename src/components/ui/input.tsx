@@ -1,22 +1,42 @@
 import * as React from "react";
+import { TextInput, StyleSheet, ViewStyle, TextStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
+export interface InputProps {
+  value?: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
+  style?: ViewStyle;
+  inputStyle?: TextStyle;
+}
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className,
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
+const Input = ({ value, onChangeText, placeholder, secureTextEntry, keyboardType, style, inputStyle }: InputProps) => {
+  return (
+    <TextInput
+      style={[styles.input, style, inputStyle]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      secureTextEntry={secureTextEntry}
+      keyboardType={keyboardType}
+      placeholderTextColor="#94a3b8"
+    />
+  );
+};
+
+const styles = StyleSheet.create({
+  input: {
+    height: 40,
+    width: "100%",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: "#0f172a",
   },
-);
-Input.displayName = "Input";
+});
 
 export { Input };

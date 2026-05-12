@@ -1,41 +1,79 @@
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native'
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index.tsx";
-import Auth from "./pages/Auth.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
-import Family from "./pages/Family.tsx";
-import Documents from "./pages/Documents.tsx";
-import ProfilePage from "./pages/ProfilePage.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { Provider as PaperProvider } from 'react-native-paper';
+import { AuthProvider } from "./hooks/useAuth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
+// Page Imports
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Family from "./pages/Family";
+import Documents from "./pages/Documents";
+import ProfilePage from "./pages/ProfilePage";
+import NotFound from "./pages/NotFound";
+
+const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/family" element={<ProtectedRoute><Family /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PaperProvider>
+        <NavigationContainer>
+          <AuthProvider>
+            <Stack.Navigator 
+              initialRouteName="Index"
+              screenOptions={{ headerShown: false }}
+            >
+              <Stack.Screen name="Index" component={Index} />
+              <Stack.Screen name="Auth" component={Auth} />
+              
+              {/* Protected Routes */}
+              <Stack.Screen name="Dashboard">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Dashboard {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+              
+              <Stack.Screen name="Family">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Family {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+              
+              <Stack.Screen name="Documents">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Documents {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+              
+              <Stack.Screen name="Profile">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <ProfilePage {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+
+              {/* Catch-all/NotFound is usually handled by navigation logic in RN, 
+                  but we include it here for consistency */}
+              <Stack.Screen name="NotFound" component={NotFound} />
+            </Stack.Navigator>
+          </AuthProvider>
+        </NavigationContainer>
+      </PaperProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

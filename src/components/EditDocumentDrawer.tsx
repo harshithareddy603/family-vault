@@ -1,14 +1,9 @@
-import { useEffect, useState } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { useFamily } from "@/hooks/useFamily";
-import { useDocuments } from "@/hooks/useDocuments";
-import { toast } from "sonner";
-import type { DocumentRow } from "@/services/supabase";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert } from 'react-native'
+import React, { useEffect, useState } from "react";
+import { Checkbox } from 'react-native-paper';
+import { useFamily } from "../hooks/useFamily";
+import { useDocuments } from "../hooks/useDocuments";
+import type { DocumentRow } from "../services/supabase";
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
 
@@ -39,8 +34,7 @@ export const EditDocumentDrawer = ({ document, isOpen, onClose }: EditDocumentDr
     }
   }, [document, isOpen]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!document) return;
     setBusy(true);
     const { error } = await updateDocument(document.id, {
@@ -52,61 +46,173 @@ export const EditDocumentDrawer = ({ document, isOpen, onClose }: EditDocumentDr
     });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
+      Alert.alert("Error", error.message);
     } else {
-      toast.success("Document updated successfully");
+      Alert.alert("Success", "Document updated successfully");
       onClose();
     }
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent>
-        <DrawerHeader className="text-left">
-          <DrawerTitle>Edit Document</DrawerTitle>
-          <DrawerDescription className="sr-only">
-            Update the details of this document.
-          </DrawerDescription>
-        </DrawerHeader>
-        <form onSubmit={submit} className="px-4 space-y-4 pb-2">
-          <div className="space-y-2">
-            <Label>Document name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Expiry</Label>
-              <Input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Belongs to</Label>
-            <Select value={owner} onValueChange={setOwner}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="self">Myself</SelectItem>
-                {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={priority} onCheckedChange={(v) => setPriority(!!v)} />
-            Mark as priority
-          </label>
-          <DrawerFooter className="px-0">
-            <Button type="submit" className="w-full bg-gradient-hero" disabled={busy}>
-              {busy ? "Saving…" : "Save changes"}
-            </Button>
-          </DrawerFooter>
-        </form>
-      </DrawerContent>
-    </Drawer>
+    <Modal
+      visible={isOpen}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Edit Document</Text>
+          
+          <ScrollView style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Document name</Text>
+              <TextInput 
+                style={styles.input} 
+                value={name} 
+                onChangeText={setName} 
+                placeholder="Enter name"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                <Text style={styles.label}>Category</Text>
+                {/* Simplified picker for now, could be a real Picker component */}
+                <TextInput 
+                  style={styles.input} 
+                  value={category} 
+                  onChangeText={setCategory}
+                  placeholder="Category"
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                <Text style={styles.label}>Expiry</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={expiry} 
+                  onChangeText={setExpiry}
+                  placeholder="YYYY-MM-DD"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Belongs to</Text>
+              <TextInput 
+                style={styles.input} 
+                value={owner === "self" ? "Myself" : (members.find(m => m.id === owner)?.name || "Myself")} 
+                editable={false}
+              />
+            </View>
+
+            <View style={styles.checkboxContainer}>
+              <Checkbox.Android
+                status={priority ? 'checked' : 'unchecked'}
+                onPress={() => setPriority(!priority)}
+                color="#3b82f6"
+              />
+              <Text style={styles.checkboxLabel}>Mark as priority</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.saveButton, busy && styles.disabledButton]} 
+              onPress={submit}
+              disabled={busy}
+            >
+              {busy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save changes</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  content: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '85%',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 24,
+  },
+  form: {
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#0F172A',
+    marginLeft: 8,
+  },
+  saveButton: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+});

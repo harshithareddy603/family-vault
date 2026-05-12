@@ -1,5 +1,8 @@
-import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio";
+import * as React from "react";
+import { View, ViewStyle } from "react-native";
 
-const AspectRatio = AspectRatioPrimitive.Root;
+const AspectRatio = ({ ratio, children, style }: { ratio: number; children: React.ReactNode; style?: ViewStyle }) => {
+  return <View style={[{ aspectRatio: ratio }, style]}>{children}</View>;
+};
 
 export { AspectRatio };

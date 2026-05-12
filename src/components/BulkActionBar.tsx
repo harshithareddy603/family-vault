@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Download, CheckSquare, XSquare, Loader2 } from "lucide-react";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Image } from 'react-native'
+import React from 'react';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -21,22 +22,109 @@ export const BulkActionBar = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-40 p-4 bg-card border shadow-card rounded-2xl flex items-center justify-between" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="flex items-center gap-3">
-        <span className="font-semibold text-sm">{selectedCount} selected</span>
-        <div className="h-4 w-[1px] bg-border mx-1" />
-        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={selectedCount === totalCount ? onDeselectAll : onSelectAll}>
+    <View style={styles.container}>
+      <View style={styles.leftSection}>
+        <Text style={styles.countText}>{selectedCount} selected</Text>
+        <View style={styles.divider} />
+        <TouchableOpacity 
+          onPress={selectedCount === totalCount ? onDeselectAll : onSelectAll}
+          style={styles.ghostButton}
+        >
           {selectedCount === totalCount ? (
-            <><XSquare className="h-3.5 w-3.5 mr-1" /> Deselect All</>
+            <View style={styles.buttonContent}>
+              <Feather name="minus-square" size={14} color="#64748B" style={styles.icon} />
+              <Text style={styles.ghostButtonText}>Deselect All</Text>
+            </View>
           ) : (
-            <><CheckSquare className="h-3.5 w-3.5 mr-1" /> Select All</>
+            <View style={styles.buttonContent}>
+              <Feather name="check-square" size={14} color="#64748B" style={styles.icon} />
+              <Text style={styles.ghostButtonText}>Select All</Text>
+            </View>
           )}
-        </Button>
-      </div>
-      <Button size="sm" onClick={onDownload} disabled={isDownloading}>
-        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-        Download ZIP
-      </Button>
-    </div>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity 
+        onPress={onDownload} 
+        disabled={isDownloading}
+        style={[styles.primaryButton, isDownloading && styles.disabledButton]}
+      >
+        {isDownloading ? (
+          <ActivityIndicator size="small" color="#fff" style={styles.icon} />
+        ) : (
+          <Feather name="download" size={16} color="#fff" style={styles.icon} />
+        )}
+        <Text style={styles.primaryButtonText}>Download ZIP</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    bottom: 80,
+    left: 16,
+    right: 16,
+    zIndex: 40,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  divider: {
+    height: 16,
+    width: 1,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 8,
+  },
+  ghostButton: {
+    height: 32,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ghostButtonText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  icon: {
+    marginRight: 6,
+  },
+});

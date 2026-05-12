@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase, type DocumentRow, type DocStatus } from "@/services/supabase";
+import { supabase, type DocumentRow, type DocStatus } from "../services/supabase";
 import { useAuth } from "./useAuth";
-import Tesseract from "tesseract.js";
-import { saveFileLocal, getFileLocal, deleteFileLocal } from "@/lib/db";
+import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
+import * as FileSystem from 'expo-file-system';
 
 const computeStatus = (expiry: string | null): DocStatus => {
   if (!expiry) return "safe";
@@ -51,14 +51,16 @@ export const useDocuments = () => {
               const { data, error } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
               if (data?.signedUrl && !error) {
                 try {
-                  const res = await fetch(data.signedUrl);
-                  if (res.ok) {
-                    const blob = await res.blob();
-                    await saveFileLocal(doc.file_url, blob);
+                  const downloadRes = await FileSystem.downloadAsync(
+                    data.signedUrl,
+                    FileSystem.documentDirectory + 'temp-' + doc.file_url.replace(/\//g, '-')
+                  );
+                  if (downloadRes.status === 200) {
+                    await saveFileLocal(doc.file_url, downloadRes.uri);
                     console.log("Pre-fetched and cached:", doc.name);
                   }
                 } catch (e) {
-                  // Ignore fetch errors in background
+                  // Ignore errors
                 }
               }
             }
@@ -72,19 +74,22 @@ export const useDocuments = () => {
     return () => clearTimeout(timer);
   }, [documents, loading]);
 
-  const uploadFile = async (file: File): Promise<string | null> => {
+  const uploadFile = async (file: any): Promise<string | null> => {
     if (!user) return null;
-    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const fileName = file.name || `file-${Date.now()}`;
+    const path = `${user.id}/${Date.now()}-${fileName}`;
     
-    // Simulate upload progress since supabase.storage doesn't expose onProgress natively in JS client
     setUploadProgress(10);
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => (prev < 90 ? prev + Math.random() * 15 : prev));
-    }, 200);
-
-    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: false });
     
-    clearInterval(progressInterval);
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: fileName,
+      type: file.type || 'application/octet-stream',
+    } as any);
+
+    const { error } = await supabase.storage.from("documents").upload(path, formData, { upsert: false });
+    
     setUploadProgress(100);
 
     if (error) {
@@ -99,11 +104,11 @@ export const useDocuments = () => {
 
   const getSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
     // 1. Check local cache first
-    let blob = await getFileLocal(path);
+    let cachedUri = await getFileLocal(path);
     
-    if (blob) {
+    if (cachedUri) {
       console.log("Serving from local cache:", path);
-      return URL.createObjectURL(blob);
+      return cachedUri;
     }
 
     // 2. If not in cache, fetch from Supabase
@@ -113,20 +118,22 @@ export const useDocuments = () => {
       return null;
     }
 
-    // 3. Fetch once and save to cache immediately
+    // 3. Download and cache immediately
     try {
-      const response = await fetch(data.signedUrl);
-      if (response.ok) {
-        blob = await response.blob();
-        await saveFileLocal(path, blob);
+      const downloadRes = await FileSystem.downloadAsync(
+        data.signedUrl,
+        FileSystem.documentDirectory + 'temp-' + path.replace(/\//g, '-')
+      );
+      if (downloadRes.status === 200) {
+        await saveFileLocal(path, downloadRes.uri);
         console.log("Downloaded and cached for future use:", path);
-        return URL.createObjectURL(blob);
+        return downloadRes.uri;
       }
     } catch (e) {
-      console.error("Fetch failed, falling back to signed URL", e);
+      console.error("Download failed, falling back to signed URL", e);
     }
 
-    // Fallback: Return the signed URL directly if caching fetch failed
+    // Fallback: Return the signed URL directly if caching failed
     return data.signedUrl;
   }, []);
 
@@ -136,7 +143,7 @@ export const useDocuments = () => {
     expiry_date?: string | null;
     family_member_id?: string | null;
     priority?: boolean;
-    file?: File | null;
+    file?: any | null;
     source?: string | null;
   }) => {
     if (!user) return { error: new Error("Not signed in") };
@@ -144,37 +151,13 @@ export const useDocuments = () => {
     let detectedSource = input.source;
 
     if (input.file) {
-      // Run OCR if it's an image
-      if (input.file.type.startsWith("image/")) {
-        try {
-          const result = await Tesseract.recognize(input.file, "eng", {
-            logger: m => console.log(m)
-          });
-          const text = result.data.text.toLowerCase();
-          
-          if (text.includes("aadhaar") || text.includes("uidai") || text.includes("government of india")) {
-            detectedSource = "aadhaar";
-          } else if (text.includes("pan") || text.includes("income tax")) {
-            detectedSource = "pan";
-          } else if (text.includes("passport") || text.includes("republic of india")) {
-            detectedSource = "passport";
-          } else if (text.includes("driving license") || text.includes("transport department")) {
-            detectedSource = "license";
-          } else if (text.includes("election commission") || text.includes("voter id")) {
-            detectedSource = "voter_id";
-          }
-        } catch (e) {
-          console.error("OCR failed:", e);
-        }
-      } else {
-        // Fallback for PDFs and other docs
-        const fname = input.file.name.toLowerCase();
-        if (fname.includes("aadhaar")) detectedSource = "aadhaar";
-        else if (fname.includes("pan")) detectedSource = "pan";
-        else if (fname.includes("passport")) detectedSource = "passport";
-        else if (fname.includes("license") || fname.includes("dl")) detectedSource = "license";
-        else if (fname.includes("voter")) detectedSource = "voter_id";
-      }
+      // Basic detection
+      const fname = (input.file.name || "").toLowerCase();
+      if (fname.includes("aadhaar")) detectedSource = "aadhaar";
+      else if (fname.includes("pan")) detectedSource = "pan";
+      else if (fname.includes("passport")) detectedSource = "passport";
+      else if (fname.includes("license") || fname.includes("dl")) detectedSource = "license";
+      else if (fname.includes("voter")) detectedSource = "voter_id";
 
       file_url = await uploadFile(input.file);
     }
@@ -192,7 +175,7 @@ export const useDocuments = () => {
     });
     if (!error) {
       if (input.file && file_url) {
-        await saveFileLocal(file_url, input.file);
+        await saveFileLocal(file_url, input.file.uri);
       }
       await fetchDocuments();
     }

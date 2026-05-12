@@ -1,22 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { DocumentPreviewSheet } from "@/components/DocumentPreviewSheet";
-import type { DocumentRow } from "@/services/supabase";
-import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useDocuments } from "@/hooks/useDocuments";
-import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard, Loader2 } from "lucide-react";
-import { DocumentLogo } from "@/components/DocumentLogo";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator } from 'react-native'
+import React, { useEffect, useMemo, useState } from "react";
+import { DocumentPreviewSheet } from "../components/DocumentPreviewSheet";
+import type { DocumentRow } from "../services/supabase";
+import { AppLayout } from "../components/AppLayout";
+import { useDocuments } from "../hooks/useDocuments";
+import { useAuth } from "../hooks/useAuth";
+import { DocumentLogo } from "../components/DocumentLogo";
+import { useNavigation } from '@react-navigation/native';
+import { Avatar } from 'react-native-paper';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents, loading } = useDocuments();
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
-
-  useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
+  const navigation = useNavigation<any>();
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((d) => d.family_member_id === null);
@@ -25,88 +22,71 @@ const Dashboard = () => {
   const name = user?.user_metadata?.name || "User";
   const avatarUrl = user?.user_metadata?.avatar_url;
 
-  const { expiringSoonCount, statusData } = useMemo(() => {
-    let expiringSoonCount = 0;
-    let safeCount = 0;
-    let soonCount = 0;
-    let expiredCount = 0;
-
-    const now = new Date();
-    documents.forEach((d) => {
-      if (d.status === "safe") safeCount++;
-      else if (d.status === "soon") soonCount++;
-      else if (d.status === "expired") expiredCount++;
-
-      if (d.expiry_date && d.status === "soon") {
-        const exp = new Date(d.expiry_date);
-        const days = Math.floor((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (days >= 0 && days <= 7) {
-          expiringSoonCount++;
-        }
-      }
-    });
-
-    return {
-      expiringSoonCount,
-      statusData: [
-        { name: "Safe", value: safeCount, color: "#22c55e" },
-        { name: "Expiring", value: soonCount, color: "#f59e0b" },
-        { name: "Expired", value: expiredCount, color: "#ef4444" },
-      ].filter(item => item.value > 0),
-    };
-  }, [documents]);
-
   return (
     <AppLayout>
-      {/* Blue Header Section */}
-      <div className="bg-[#4a3aff] text-white rounded-2xl p-5 mb-6 relative overflow-hidden">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-xl font-bold font-display">Welcome, {name}!</h1>
-          </div>
-          <Avatar className="h-12 w-12 border-2 border-white/20">
-            {avatarUrl ? <AvatarImage src={avatarUrl} className="object-cover object-[center_20%]" /> : <AvatarFallback className="bg-primary-foreground text-primary">{name.charAt(0)}</AvatarFallback>}
-          </Avatar>
-        </div>
-        <p className="text-sm text-white/90 mb-4 leading-snug">
-          Smart Doc's stores the files as per the user uploades.
-        </p>
-      </div>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Blue Header Section */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.welcomeText}>Welcome,</Text>
+              <Text style={styles.userName}>{name}!</Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              ) : (
+                <Avatar.Text size={48} label={name.charAt(0)} style={styles.avatarFallback} labelStyle={styles.avatarLabel} />
+              )}
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.headerSubtitle}>
+            Smart Doc's stores the files as per the user uploades.
+          </Text>
+        </View>
 
-      {/* Document List */}
-      <Card className="p-4 shadow-card mb-5 border-none bg-transparent shadow-none">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-base font-semibold">My documents</h2>
-        </div>
-        {loading ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Loading documents...</p>
-          </div>
-        ) : filteredDocuments.length === 0 ? (
-          <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
-        ) : (
-          <ul className="space-y-2">
-            {filteredDocuments.slice(0, 5).map((d) => (
-              <li 
-                key={d.id} 
-                onClick={() => setPreviewDoc(d)}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50 cursor-pointer hover:bg-secondary/20 transition-colors"
+        {/* Document List Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My documents</Text>
+          </View>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#64748B" />
+              <Text style={styles.loadingText}>Loading documents...</Text>
+            </View>
+          ) : filteredDocuments.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No documents yet.</Text>
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => navigation.navigate("Documents")}
               >
-                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white rounded-xl overflow-hidden p-1 shadow-sm border border-border/20">
-                  <DocumentLogo name={d.name} category={d.category} source={d.source} className="h-8 w-8" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate text-foreground">{d.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate uppercase tracking-wider font-medium">
-                    {d.category}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+                <Text style={styles.ctaButtonText}>Add document</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.list}>
+              {filteredDocuments.slice(0, 5).map((d) => (
+                <TouchableOpacity 
+                  key={d.id} 
+                  style={styles.listItem}
+                  onPress={() => setPreviewDoc(d)}
+                >
+                  <View style={styles.logoContainer}>
+                    <DocumentLogo name={d.name} category={d.category} source={d.source} size={32} />
+                  </View>
+                  <View style={styles.itemContent}>
+                    <Text style={styles.itemName} numberOfLines={1}>{d.name}</Text>
+                    <Text style={styles.itemCategory}>{d.category.toUpperCase()}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
       <DocumentPreviewSheet 
         document={previewDoc} 
@@ -117,11 +97,138 @@ const Dashboard = () => {
   );
 };
 
-const EmptyHint = ({ text, cta, to }: { text: string; cta: string; to: string }) => (
-  <div className="text-center py-5">
-    <p className="text-sm text-muted-foreground mb-3">{text}</p>
-    <Link to={to}><Button size="sm">{cta}</Button></Link>
-  </div>
-);
+const styles = StyleSheet.create({
+  scrollContent: {
+    padding: 20,
+  },
+  header: {
+    backgroundColor: '#4a3aff',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  welcomeText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  avatarFallback: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  avatarLabel: {
+    color: '#4a3aff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 20,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 16,
+  },
+  ctaButton: {
+    backgroundColor: '#4a3aff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  ctaButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  list: {
+    gap: 12,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  logoContainer: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  itemContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  itemCategory: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+});
 
 export default Dashboard;

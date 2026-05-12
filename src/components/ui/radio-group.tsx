@@ -1,36 +1,69 @@
 import * as React from "react";
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
-import { Circle } from "lucide-react";
+import { View, StyleSheet, TouchableOpacity, ViewStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
-
-const RadioGroup = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
->(({ className, ...props }, ref) => {
-  return <RadioGroupPrimitive.Root className={cn("grid gap-2", className)} {...props} ref={ref} />;
-});
-RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
-
-const RadioGroupItem = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
->(({ className, ...props }, ref) => {
+const RadioGroup = ({ children, style, value, onValueChange }: { 
+  children: React.ReactNode; 
+  style?: ViewStyle;
+  value?: string;
+  onValueChange?: (value: string) => void;
+}) => {
   return (
-    <RadioGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    >
-      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-        <Circle className="h-2.5 w-2.5 fill-current text-current" />
-      </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>
+    <View style={[styles.group, style]}>
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            selected: (child.props as any).value === value,
+            onSelect: () => onValueChange?.((child.props as any).value),
+          });
+        }
+        return child;
+      })}
+    </View>
   );
+};
+
+const RadioGroupItem = ({ 
+  selected, 
+  onSelect,
+  style 
+}: { 
+  value: string;
+  selected?: boolean;
+  onSelect?: () => void;
+  style?: ViewStyle;
+}) => {
+  return (
+    <TouchableOpacity 
+      style={[styles.item, selected && styles.itemSelected, style]} 
+      onPress={onSelect}
+    >
+      {selected && <View style={styles.indicator} />}
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  group: {
+    gap: 12,
+  },
+  item: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemSelected: {
+    borderColor: "#3b82f6",
+  },
+  indicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#3b82f6",
+  },
 });
-RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName;
 
 export { RadioGroup, RadioGroupItem };

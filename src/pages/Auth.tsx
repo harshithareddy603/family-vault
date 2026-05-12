@@ -1,130 +1,366 @@
-import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useSession } from "@/hooks/useSession";
-import { isSupabaseConfigured } from "@/services/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useSession } from "../hooks/useSession";
+import { isSupabaseConfigured } from "../services/supabase";
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 const Auth = () => {
   const { signIn, signUp } = useAuth();
   const { isAuthenticated, loading } = useSession();
-  const nav = useNavigate();
+  const navigation = useNavigation<any>();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<any>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { document.title = "Sign in · Smart Docs"; }, []);
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigation.replace("Dashboard");
+    }
+  }, [loading, isAuthenticated, navigation]);
 
-  if (loading) return null;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setPhoto({
+        uri: asset.uri,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+        size: asset.fileSize || 0
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
     setBusy(true);
     if (mode === "login") {
       const { error } = await signIn({ email, password });
-      if (error) toast.error(error.message);
-      else { toast.success("Welcome back!"); nav("/dashboard"); }
+      if (error) Alert.alert("Error", error.message);
+      else { 
+        Alert.alert("Success", "Welcome back!"); 
+        navigation.replace("Dashboard"); 
+      }
     } else {
       if (!photo) {
-        toast.error("Profile photo is required.");
+        Alert.alert("Error", "Profile photo is required.");
         setBusy(false);
         return;
       }
       if (photo.size > 3 * 1024 * 1024) {
-        toast.error("Profile photo must be less than 3MB.");
+        Alert.alert("Error", "Profile photo must be less than 3MB.");
         setBusy(false);
         return;
       }
-      const { error } = await signUp({ email, password, name, phone, photo });
-      if (error) toast.error(error.message);
-      else toast.success("Account created. Check your email to verify (if required).");
+      // Note: The signUp hook expects a File object on web. 
+      // In React Native, the object structure above {uri, name, type} is typically handled by fetch/form-data.
+      const { error } = await signUp({ email, password, name, phone, photo: photo as any });
+      if (error) Alert.alert("Error", error.message);
+      else Alert.alert("Success", "Account created. Check your email to verify (if required).");
     }
     setBusy(false);
   };
 
+  if (loading) return (
+    <View style={styles.center}>
+      <ActivityIndicator size="large" color="#3b82f6" />
+    </View>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-hero shadow-soft mb-4">
-            <ShieldCheck className="h-7 w-7 text-primary-foreground" />
-          </div>
-          <h1 className="font-display text-3xl font-bold">Smart Docs</h1>
-          <p className="text-muted-foreground text-sm mt-1">Your family's documents, safely organized.</p>
-        </div>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.logoSection}>
+          <View style={styles.logoIcon}>
+            <MaterialCommunityIcons name="shield-check" size={32} color="#fff" />
+          </View>
+          <Text style={styles.appName}>Smart Docs</Text>
+          <Text style={styles.appSubtitle}>Your family's documents, safely organized.</Text>
+        </View>
 
         {!isSupabaseConfigured && (
-          <Card className="p-4 mb-4 border-warning/40 bg-warning/5 flex gap-3">
-            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">Supabase not configured</p>
-              <p className="text-muted-foreground">Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in Workspace → Build Secrets, then redeploy.</p>
-            </div>
-          </Card>
+          <View style={styles.warningCard}>
+            <Feather name="alert-circle" size={20} color="#92400e" />
+            <View style={styles.warningTextContainer}>
+              <Text style={styles.warningTitle}>Supabase not configured</Text>
+              <Text style={styles.warningText}>Please check your environment variables.</Text>
+            </View>
+          </View>
         )}
 
-        <Card className="p-6 shadow-card">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
-            </TabsList>
+        <View style={styles.authCard}>
+          <View style={styles.tabs}>
+            <TouchableOpacity 
+              style={[styles.tab, mode === "login" && styles.activeTab]}
+              onPress={() => setMode("login")}
+            >
+              <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.tab, mode === "signup" && styles.activeTab]}
+              onPress={() => setMode("signup")}
+            >
+              <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
+            </TouchableOpacity>
+          </View>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <TabsContent value="signup" className="space-y-4 mt-0">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required={mode === "signup"} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Mobile Number</Label>
-                  <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required={mode === "signup"} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="photo">Profile Photo (Max 3MB)</Label>
-                  <Input 
-                    id="photo" 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={(e) => setPhoto(e.target.files?.[0] || null)} 
-                    required={mode === "signup"} 
+          <View style={styles.form}>
+            {mode === "signup" && (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput 
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter full name"
                   />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Mobile Number</Text>
+                  <TextInput 
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Enter phone number"
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Profile Photo (Max 3MB)</Text>
+                  <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+                    <Feather name="image" size={16} color="#64748B" style={{ marginRight: 8 }} />
+                    <Text style={styles.photoButtonText}>
+                      {photo ? "Photo Selected" : "Choose Profile Photo"}
+                    </Text>
+                  </TouchableOpacity>
                   {photo && photo.size > 3 * 1024 * 1024 && (
-                    <p className="text-xs text-destructive">File size exceeds 3MB limit.</p>
+                    <Text style={styles.errorText}>File size exceeds 3MB limit.</Text>
                   )}
-                </div>
-              </TabsContent>
+                </View>
+              </>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-              </div>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput 
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput 
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter password"
+                secureTextEntry
+              />
+            </View>
 
-              <Button type="submit" className="w-full bg-gradient-hero shadow-soft" disabled={busy}>
-                {busy ? "Please wait…" : mode === "login" ? "Login" : "Create account"}
-              </Button>
-            </form>
-          </Tabs>
-        </Card>
-      </div>
-    </div>
+            <TouchableOpacity 
+              style={[styles.submitButton, busy && styles.disabledButton]}
+              onPress={handleSubmit}
+              disabled={busy}
+            >
+              {busy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {mode === "login" ? "Login" : "Create account"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  scrollContent: {
+    padding: 24,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  appSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  warningCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.4)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  warningTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  warningTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#92400e',
+    marginTop: 2,
+  },
+  authCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  activeTabText: {
+    color: '#0F172A',
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+  },
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  photoButtonText: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+  },
+  submitButton: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+});
 
 export default Auth;

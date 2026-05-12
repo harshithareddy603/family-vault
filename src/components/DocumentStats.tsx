@@ -1,8 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDocuments } from "@/hooks/useDocuments";
-import { useFamily } from "@/hooks/useFamily";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
-import { useMemo } from "react";
+import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native'
+import React, { useMemo } from "react";
+import { useDocuments } from "../hooks/useDocuments";
+import { useFamily } from "../hooks/useFamily";
+import { BarChart, LineChart } from "react-native-chart-kit";
+
+const screenWidth = Dimensions.get("window").width;
 
 export const DocumentStats = () => {
   const { documents } = useDocuments();
@@ -13,7 +15,12 @@ export const DocumentStats = () => {
     documents.forEach((d) => {
       counts[d.category] = (counts[d.category] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+    const labels = Object.keys(counts);
+    const data = Object.values(counts);
+    return {
+      labels: labels.length > 0 ? labels : ["None"],
+      datasets: [{ data: data.length > 0 ? data : [0] }]
+    };
   }, [documents]);
 
   const ownerData = useMemo(() => {
@@ -24,87 +31,135 @@ export const DocumentStats = () => {
         : "You";
       counts[ownerName] = (counts[ownerName] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+    const labels = Object.keys(counts);
+    const data = Object.values(counts);
+    return {
+      labels: labels.length > 0 ? labels : ["None"],
+      datasets: [{ data: data.length > 0 ? data : [0] }]
+    };
   }, [documents, members]);
 
   const timelineData = useMemo(() => {
     const months: Record<string, number> = {};
     const now = new Date();
-    // Initialize next 12 months
-    for (let i = 0; i < 12; i++) {
+    // Initialize next 6 months for better mobile view
+    for (let i = 0; i < 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+      const label = d.toLocaleString('default', { month: 'short' });
       months[label] = 0;
     }
     documents.forEach((d) => {
       if (d.expiry_date) {
         const exp = new Date(d.expiry_date);
         const diffMonths = (exp.getFullYear() - now.getFullYear()) * 12 + (exp.getMonth() - now.getMonth());
-        if (diffMonths >= 0 && diffMonths < 12) {
-          const label = exp.toLocaleString('default', { month: 'short', year: '2-digit' });
+        if (diffMonths >= 0 && diffMonths < 6) {
+          const label = exp.toLocaleString('default', { month: 'short' });
           if (months[label] !== undefined) months[label]++;
         }
       }
     });
-    return Object.keys(months).map(label => ({ name: label, count: months[label] }));
+    return {
+      labels: Object.keys(months),
+      datasets: [{ data: Object.values(months) }]
+    };
   }, [documents]);
 
   if (documents.length === 0) return null;
 
+  const chartConfig = {
+    backgroundColor: "#ffffff",
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+    style: {
+      borderRadius: 16
+    },
+    propsForDots: {
+      r: "6",
+      strokeWidth: "2",
+      stroke: "#ffa726"
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Documents by Category</CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Documents by Category</Text>
+        <BarChart
+          data={categoryData}
+          width={screenWidth - 64}
+          height={220}
+          yAxisLabel=""
+          yAxisSuffix=""
+          chartConfig={chartConfig}
+          verticalLabelRotation={30}
+          style={styles.chart}
+          fromZero
+        />
+      </View>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Documents per Owner</CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ownerData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Documents per Owner</Text>
+        <BarChart
+          data={ownerData}
+          width={screenWidth - 64}
+          height={220}
+          yAxisLabel=""
+          yAxisSuffix=""
+          chartConfig={{
+            ...chartConfig,
+            color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+          }}
+          verticalLabelRotation={30}
+          style={styles.chart}
+          fromZero
+        />
+      </View>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Expiry Timeline (Next 12 Months)</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={3} dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-    </div>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Expiry Timeline (Next 6 Months)</Text>
+        <LineChart
+          data={timelineData}
+          width={screenWidth - 64}
+          height={220}
+          chartConfig={{
+            ...chartConfig,
+            color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+          }}
+          bezier
+          style={styles.chart}
+        />
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+});

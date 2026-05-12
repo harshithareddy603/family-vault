@@ -1,116 +1,240 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ReactNode, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useDocuments } from "@/hooks/useDocuments";
-import { Button } from "@/components/ui/button";
-import { FileText, Home, Users, LogOut, ShieldCheck, User, Bell } from "lucide-react";
-import { NotificationsSheet } from "@/components/NotificationsSheet";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, SafeAreaView } from 'react-native'
+import React, { ReactNode, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useDocuments } from "../hooks/useDocuments";
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { NotificationsSheet } from "./NotificationsSheet";
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const links = [
-  { to: "/dashboard", label: "Home", icon: Home },
-  { to: "/documents", label: "Docs", icon: FileText },
-  { to: "/family", label: "Family", icon: Users },
-  { to: "/profile", label: "Profile", icon: User },
+  { to: "Dashboard", label: "Home", icon: "home-outline" as const },
+  { to: "Documents", label: "Docs", icon: "file-document-outline" as const },
+  { to: "Family", label: "Family", icon: "account-group-outline" as const },
+  { to: "Profile", label: "Profile", icon: "account-outline" as const },
 ];
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { user, signOut } = useAuth();
   const { documents } = useDocuments();
-  const nav = useNavigate();
+  const navigation = useNavigation<any>();
+  const route = useRoute();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notificationsCount = documents.filter((d) => d.status === "expired" || d.status === "soon").length;
 
   return (
-    <div className="min-h-screen bg-gradient-soft flex flex-col">
+    <SafeAreaView style={styles.container}>
       {/* Compact mobile top bar */}
-      <header className="border-b border-border bg-card/90 backdrop-blur sticky top-0 z-30">
-        <div className="px-4 flex h-14 items-center justify-between gap-3">
-          <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-hero shadow-soft">
-              <ShieldCheck className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-display text-base font-bold leading-none">Smart Docs</p>
-              {user?.email && (
-                <p className="text-[11px] text-muted-foreground truncate max-w-[160px] mt-0.5">{user.email}</p>
-              )}
-            </div>
-          </Link>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} style={styles.logoContainer}>
+          <View style={styles.logoIcon}>
+            <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
+          </View>
+          <View style={styles.logoTextContainer}>
+            <Text style={styles.logoTitle}>Smart Docs</Text>
+            {user?.email && (
+              <Text style={styles.logoSubtitle} numberOfLines={1}>{user.email}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
 
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Notifications"
-              className="relative"
-              onClick={() => setShowNotifications(true)}
-            >
-              <Bell className="h-5 w-5" />
-              {notificationsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-danger border-2 border-card" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Logout"
-              onClick={async () => { await signOut(); nav("/auth"); }}
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => setShowNotifications(true)}
+          >
+            <Feather name="bell" size={20} color="#374151" />
+            {notificationsCount > 0 && (
+              <View style={styles.notificationDot} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={async () => { await signOut(); navigation.navigate("Auth"); }}
+          >
+            <Feather name="log-out" size={20} color="#374151" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-      {/* Main content (with bottom padding so nav doesn't cover it) */}
-      <main className="flex-1 px-4 py-5 pb-24 max-w-screen-sm w-full mx-auto">
+      {/* Main content */}
+      <ScrollView contentContainerStyle={styles.mainContent}>
         {children}
-      </main>
+      </ScrollView>
 
       {/* Bottom tab navigation */}
-      <nav
-        className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="grid grid-cols-4 max-w-screen-sm mx-auto">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span
-                    className={`relative grid h-9 w-9 place-items-center rounded-xl transition-colors ${
-                      isActive ? "bg-primary/10" : ""
-                    }`}
-                  >
-                    <l.icon className="h-5 w-5" />
-                    {l.label === "Docs" && notificationsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-danger text-[8px] font-bold text-white border-2 border-card">
+      <View style={styles.bottomNav}>
+        <View style={styles.navGrid}>
+          {links.map((l) => {
+            const isActive = route.name === l.to;
+            return (
+              <TouchableOpacity
+                key={l.to}
+                onPress={() => navigation.navigate(l.to)}
+                style={styles.navItem}
+              >
+                <View style={[styles.navIconContainer, isActive && styles.navIconActive]}>
+                  <MaterialCommunityIcons 
+                    name={l.icon as any} 
+                    size={20} 
+                    color={isActive ? "#3b82f6" : "#6b7280"} 
+                  />
+                  {l.label === "Docs" && notificationsCount > 0 && (
+                    <View style={styles.navBadge}>
+                      <Text style={styles.navBadgeText}>
                         {notificationsCount > 9 ? '9+' : notificationsCount}
-                      </span>
-                    )}
-                  </span>
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                   {l.label}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       <NotificationsSheet 
         documents={documents}
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
       />
-    </div>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  header: {
+    flexDirection: 'row',
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  logoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  logoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  logoSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mainContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    paddingBottom: 100,
+  },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingBottom: 20,
+  },
+  navGrid: {
+    flexDirection: 'row',
+    height: 64,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  navIconActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  navLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  navLabelActive: {
+    color: '#3B82F6',
+  },
+  navBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  navBadgeText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+});

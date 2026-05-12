@@ -1,37 +1,78 @@
 import * as React from "react";
-import * as TogglePrimitive from "@radix-ui/react-toggle";
-import { cva, type VariantProps } from "class-variance-authority";
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
+const Toggle = ({ 
+  pressed, 
+  onPressedChange, 
+  children,
+  variant = "default",
+  size = "default",
+  style 
+}: { 
+  pressed?: boolean; 
+  onPressedChange?: (pressed: boolean) => void;
+  children: React.ReactNode;
+  variant?: "default" | "outline";
+  size?: "default" | "sm" | "lg";
+  style?: ViewStyle;
+}) => {
+  const containerStyle = [
+    styles.base,
+    variant === "outline" && styles.outline,
+    size === "sm" && styles.sm,
+    size === "lg" && styles.lg,
+    pressed && styles.pressed,
+    style
+  ];
 
-const toggleVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
-  {
-    variants: {
-      variant: {
-        default: "bg-transparent",
-        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
-      },
-      size: {
-        default: "h-10 px-3",
-        sm: "h-9 px-2.5",
-        lg: "h-11 px-5",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+  const textStyle = [
+    styles.text,
+    pressed && styles.textPressed
+  ];
+
+  return (
+    <TouchableOpacity 
+      style={containerStyle} 
+      onPress={() => onPressedChange?.(!pressed)}
+    >
+      <Text style={textStyle}>{children}</Text>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  base: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    height: 40,
+    backgroundColor: "transparent",
   },
-);
+  outline: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  sm: {
+    height: 36,
+    paddingHorizontal: 10,
+  },
+  lg: {
+    height: 44,
+    paddingHorizontal: 20,
+  },
+  pressed: {
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+  },
+  text: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#0f172a",
+  },
+  textPressed: {
+    color: "#3b82f6",
+  },
+});
 
-const Toggle = React.forwardRef<
-  React.ElementRef<typeof TogglePrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>
->(({ className, variant, size, ...props }, ref) => (
-  <TogglePrimitive.Root ref={ref} className={cn(toggleVariants({ variant, size, className }))} {...props} />
-));
-
-Toggle.displayName = TogglePrimitive.Root.displayName;
-
-export { Toggle, toggleVariants };
+export { Toggle };

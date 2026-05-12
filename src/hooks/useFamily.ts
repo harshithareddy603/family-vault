@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase, type FamilyMember } from "@/services/supabase";
+import { supabase, type FamilyMember } from "../services/supabase";
 import { useAuth } from "./useAuth";
 
 export const useFamily = () => {

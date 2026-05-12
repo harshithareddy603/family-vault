@@ -1,43 +1,66 @@
 import * as React from "react";
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
 
-import { cn } from "@/lib/utils";
-
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
-));
-Card.displayName = "Card";
-
-const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
-  ),
+const Card = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.card, style]}>{children}</View>
 );
-CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
-  ),
+const CardHeader = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.header, style]}>{children}</View>
 );
-CardTitle.displayName = "CardTitle";
 
-const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
-  ),
+const CardTitle = ({ children, style }: { children: React.ReactNode; style?: TextStyle }) => (
+  <Text style={[styles.title, style]}>{children}</Text>
 );
-CardDescription.displayName = "CardDescription";
 
-const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />,
+const CardDescription = ({ children, style }: { children: React.ReactNode; style?: TextStyle }) => (
+  <Text style={[styles.description, style]}>{children}</Text>
 );
-CardContent.displayName = "CardContent";
 
-const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
-  ),
+const CardContent = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.content, style]}>{children}</View>
 );
-CardFooter.displayName = "CardFooter";
+
+const CardFooter = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[styles.footer, style]}>{children}</View>
+);
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  header: {
+    padding: 24,
+    paddingBottom: 6,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#0f172a",
+    letterSpacing: -0.5,
+  },
+  description: {
+    fontSize: 14,
+    color: "#64748b",
+  },
+  content: {
+    padding: 24,
+    paddingTop: 0,
+  },
+  footer: {
+    padding: 24,
+    paddingTop: 0,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+});
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
