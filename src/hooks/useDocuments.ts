@@ -99,32 +99,34 @@ export const useDocuments = () => {
 
   const getSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
     // 1. Check local cache first
-    const localBlob = await getFileLocal(path);
-    if (localBlob) {
+    let blob = await getFileLocal(path);
+    
+    if (blob) {
       console.log("Serving from local cache:", path);
-      return URL.createObjectURL(localBlob);
+      return URL.createObjectURL(blob);
     }
 
-    // 2. Fetch from Supabase
+    // 2. If not in cache, fetch from Supabase
     const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
     if (error || !data?.signedUrl) {
       console.warn("Could not find file in storage:", path);
       return null;
     }
 
-    // 3. Lazy cache: Download and save for next time in background
-    (async () => {
-      try {
-        const response = await fetch(data.signedUrl);
-        if (response.ok) {
-          const blob = await response.blob();
-          await saveFileLocal(path, blob);
-        }
-      } catch (e) {
-        console.error("Failed to lazy cache file", e);
+    // 3. Fetch once and save to cache immediately
+    try {
+      const response = await fetch(data.signedUrl);
+      if (response.ok) {
+        blob = await response.blob();
+        await saveFileLocal(path, blob);
+        console.log("Downloaded and cached for future use:", path);
+        return URL.createObjectURL(blob);
       }
-    })();
+    } catch (e) {
+      console.error("Fetch failed, falling back to signed URL", e);
+    }
 
+    // Fallback: Return the signed URL directly if caching fetch failed
     return data.signedUrl;
   }, []);
 

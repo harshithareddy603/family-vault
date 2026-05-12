@@ -15,19 +15,19 @@ export const DocumentLogo = ({ name, category, source, className = "h-6 w-6" }: 
   const s = source?.toLowerCase() || "";
   
   const getLogoUrl = () => {
-    if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar") || c === "id") {
+    if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar")) {
       return "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/en/thumb/c/cf/Aadhaar_Logo.svg/200px-Aadhaar_Logo.svg.png";
     }
     if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
       return "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Income_Tax_Department_India_Logo.png/200px-Income_Tax_Department_India_Logo.png";
     }
-    if (n.includes("passport") || c === "passport" || s.includes("passport")) {
+    if (n.includes("passport") || c.includes("passport") || s.includes("passport")) {
       return "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Emblem_of_India.svg/200px-Emblem_of_India.svg.png";
     }
-    if (n.includes("voter") || c === "voter" || s.includes("voter_id")) {
+    if (n.includes("voter") || c.includes("voter") || s.includes("voter_id")) {
       return "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Election_Commission_of_India_logo.svg/200px-Election_Commission_of_India_logo.svg.png";
     }
-    if (c === "driving license" || c === "license" || n.includes("license") || s.includes("license")) {
+    if (c.includes("license") || n.includes("license") || s.includes("license") || n.includes(" dl")) {
       return "https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Seal_of_the_Ministry_of_Road_Transport_and_Highways_India.png/200px-Seal_of_the_Ministry_of_Road_Transport_and_Highways_India.png";
     }
     return null;
@@ -48,21 +48,23 @@ export const DocumentLogo = ({ name, category, source, className = "h-6 w-6" }: 
   }
 
   // Fallback logic for non-official docs or if image fails
-  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar") || c === "id") {
+  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar")) {
     return <Fingerprint className={`${className} text-purple-600`} />;
   }
   if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
     return <Landmark className={`${className} text-blue-600`} />;
   }
-  if (n.includes("passport") || c === "passport" || s.includes("passport")) {
+  if (n.includes("passport") || c.includes("passport") || s.includes("passport")) {
     return <Globe className={`${className} text-sky-500`} />;
   }
-  if (n.includes("voter") || c === "voter" || s.includes("voter_id")) {
+  if (n.includes("voter") || c.includes("voter") || s.includes("voter_id")) {
     return <CreditCard className={`${className} text-teal-600`} />;
   }
-  if (c === "driving license" || c === "license" || n.includes("license") || s.includes("license")) {
+  if (c.includes("license") || n.includes("license") || s.includes("license") || n.includes(" dl")) {
     return <Car className={`${className} text-amber-600`} />;
   }
+  
+  if (c === "id") return <Fingerprint className={`${className} text-slate-500 opacity-70`} />;
 
   if (c === "medical") return <HeartPulse className={`${className} text-rose-500`} />;
   if (c === "property") return <Building2 className={`${className} text-indigo-500`} />;
