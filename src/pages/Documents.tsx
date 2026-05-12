@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Dimensions, FlatList } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Dimensions, FlatList, Platform } from 'react-native'
 import React, { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "../components/AppLayout";
 import { useFamily } from "../hooks/useFamily";
@@ -9,7 +9,7 @@ import { DocumentPreviewSheet } from "../components/DocumentPreviewSheet";
 import { QRShareDialog } from "../components/QRShareDialog";
 import { EditDocumentDrawer } from "../components/EditDocumentDrawer";
 import { BulkActionBar } from "../components/BulkActionBar";
-import { Checkbox } from 'react-native-paper';
+import { Checkbox, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Linking from 'expo-linking';
 import type { DocumentRow } from "../services/supabase";
