@@ -1,34 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFamily } from "@/hooks/useFamily";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { FileText, Users, AlertTriangle, CheckCircle2, Clock, ChevronRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { members } = useFamily();
   const { documents } = useDocuments();
-  const [selectedOwner, setSelectedOwner] = useState<string>("all");
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
-  const stats = useMemo(() => {
-    const expired = documents.filter((d) => d.status === "expired").length;
-    const soon = documents.filter((d) => d.status === "soon").length;
-    const safe = documents.filter((d) => d.status === "safe").length;
-    return { expired, soon, safe };
-  }, [documents]);
-
   const filteredDocuments = useMemo(() => {
-    if (selectedOwner === "all") return documents;
-    if (selectedOwner === "myself") return documents.filter((d) => d.family_member_id === null);
-    return documents.filter((d) => d.family_member_id === selectedOwner);
-  }, [documents, selectedOwner]);
+    return documents.filter((d) => d.family_member_id === null);
+  }, [documents]);
 
   const name = user?.user_metadata?.name;
 
@@ -41,30 +28,11 @@ const Dashboard = () => {
         </h1>
       </div>
 
-      {/* Stat cards: 3 cols */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <StatCard icon={FileText} label="Documents" value={documents.length} tone="primary" />
-        <StatCard icon={Clock} label="Expiring" value={stats.soon} tone="warning" />
-        <StatCard icon={AlertTriangle} label="Expired" value={stats.expired} tone="danger" />
-      </div>
-
       {/* Recent documents */}
       <Card className="p-4 shadow-card mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-base font-semibold">Recent documents</h2>
+          <h2 className="font-display text-base font-semibold">My documents</h2>
           <div className="flex items-center gap-2">
-            <Select value={selectedOwner} onValueChange={setSelectedOwner}>
-              <SelectTrigger className="w-[120px] h-8 text-xs">
-                <SelectValue placeholder="Owner" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="myself">Myself</SelectItem>
-                {members.map(m => (
-                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Link to="/documents" className="text-xs text-primary font-medium flex items-center ml-1">
               All <ChevronRight className="h-3.5 w-3.5" />
             </Link>
@@ -91,23 +59,6 @@ const Dashboard = () => {
     </AppLayout>
   );
 };
-
-const toneClasses: Record<string, string> = {
-  primary: "bg-primary/10 text-primary",
-  accent: "bg-accent/10 text-accent",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-danger/10 text-danger",
-};
-
-const StatCard = ({ icon: Icon, label, value, tone }: { icon: any; label: string; value: number; tone: string }) => (
-  <Card className="p-4 shadow-card">
-    <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}>
-      <Icon className="h-4.5 w-4.5" />
-    </div>
-    <p className="mt-2 text-2xl font-bold font-display leading-none">{value}</p>
-    <p className="text-xs text-muted-foreground mt-1">{label}</p>
-  </Card>
-);
 
 const StatusPill = ({ status }: { status: string }) => {
   const map: Record<string, { cls: string; icon: any; label: string }> = {
