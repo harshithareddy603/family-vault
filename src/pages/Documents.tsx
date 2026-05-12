@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocumentsWithCache } from "@/hooks/useDocumentsWithCache";
-import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2, CheckSquare, Share2, Search, FileX, Pencil, Loader2 } from "lucide-react";
+import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2, CheckSquare, Share2, Search, FileX, Pencil, Loader2, Fingerprint, Landmark, Globe, CreditCard, HeartPulse, Building2, GraduationCap, Car } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentPreviewSheet } from "@/components/DocumentPreviewSheet";
 import { QRShareDialog } from "@/components/QRShareDialog";
@@ -29,6 +29,35 @@ import { saveAs } from "file-saver";
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
+
+const getDocumentLogo = (name: string, category: string, source: string | null) => {
+  const n = name.toLowerCase();
+  const c = category.toLowerCase();
+  const s = source?.toLowerCase() || "";
+  
+  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar") || c === "id") {
+    return <Fingerprint className="h-5 w-5 text-purple-600" />;
+  }
+  if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
+    return <Landmark className="h-5 w-5 text-blue-600" />;
+  }
+  if (n.includes("passport") || c === "passport" || s.includes("passport")) {
+    return <Globe className="h-5 w-5 text-sky-500" />;
+  }
+  if (n.includes("voter") || c === "voter" || s.includes("voter_id")) {
+    return <CreditCard className="h-5 w-5 text-teal-600" />;
+  }
+  if (c === "driving license" || c === "license" || n.includes("license") || s.includes("license")) {
+    return <Car className="h-5 w-5 text-amber-600" />;
+  }
+  
+  if (c === "medical") return <HeartPulse className="h-5 w-5 text-rose-500" />;
+  if (c === "property") return <Building2 className="h-5 w-5 text-indigo-500" />;
+  if (c === "education") return <GraduationCap className="h-5 w-5 text-emerald-500" />;
+  if (c === "insurance") return <Car className="h-5 w-5 text-amber-500" />;
+  
+  return <FileText className="h-5 w-5 text-blue-500" />;
+};
 
 const Documents = () => {
   const { members } = useFamily();
@@ -198,9 +227,14 @@ const Documents = () => {
         </div>
         <div className="flex items-center gap-2">
           {uploadProgress > 0 && (
-            <div className="flex items-center gap-1.5 text-primary font-medium text-xs bg-primary/10 px-2 py-1.5 rounded-full">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {Math.round(uploadProgress)}%
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[10px] font-medium text-primary">{Math.round(uploadProgress)}%</span>
+              <div className="w-20 h-1.5 bg-primary/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
             </div>
           )}
           <Button 
@@ -337,8 +371,8 @@ const Documents = () => {
                   }}
                 >
                   <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <FileText className="h-5 w-5" />
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary/50 text-primary overflow-hidden">
+                      {getDocumentLogo(d.name, d.category, d.source)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm truncate">{d.name}</p>

@@ -15,23 +15,26 @@ const getDocumentLogo = (name: string, category: string, source: string | null) 
   const c = category.toLowerCase();
   const s = source?.toLowerCase() || "";
   
-  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar")) {
-    return <Fingerprint className="h-6 w-6 text-purple-500" />;
+  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar") || c === "id") {
+    return <Fingerprint className="h-6 w-6 text-purple-600" />;
   }
   if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
     return <Landmark className="h-6 w-6 text-blue-600" />;
   }
-  if (n.includes("passport") || c.includes("passport") || s.includes("passport")) {
+  if (n.includes("passport") || c === "passport" || s.includes("passport")) {
     return <Globe className="h-6 w-6 text-sky-500" />;
   }
-  if (n.includes("voter") || c.includes("voter") || s.includes("voter_id")) {
-    return <CreditCard className="h-6 w-6 text-teal-500" />;
+  if (n.includes("voter") || c === "voter" || s.includes("voter_id")) {
+    return <CreditCard className="h-6 w-6 text-teal-600" />;
+  }
+  if (c === "driving license" || c === "license" || n.includes("license") || s.includes("license")) {
+    return <Car className="h-6 w-6 text-amber-600" />;
   }
   
   if (c === "medical") return <HeartPulse className="h-6 w-6 text-rose-500" />;
   if (c === "property") return <Building2 className="h-6 w-6 text-indigo-500" />;
   if (c === "education") return <GraduationCap className="h-6 w-6 text-emerald-500" />;
-  if (c === "insurance" || c === "license" || s.includes("license")) return <Car className="h-6 w-6 text-amber-500" />;
+  if (c === "insurance") return <Car className="h-6 w-6 text-amber-500" />;
   
   return <FileText className="h-6 w-6 text-blue-500" />;
 };
