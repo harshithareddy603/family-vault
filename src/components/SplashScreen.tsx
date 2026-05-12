@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
-import { HardDrive } from "lucide-react";
+import { FileDown, Cloud } from "lucide-react";
 
 export const SplashScreen = () => {
   const [progress, setProgress] = useState(0);
@@ -24,15 +24,19 @@ export const SplashScreen = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-50">
-      <div className="flex flex-col items-center max-w-xs w-full px-8 animate-in fade-in zoom-in duration-500">
-        <div className="h-16 w-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg mb-6">
-          <HardDrive className="h-8 w-8 text-primary-foreground" />
+    <div className="fixed inset-0 flex flex-col items-center justify-between bg-[#5b45ff] z-50 text-white">
+      <div className="flex-1 flex flex-col items-center justify-center max-w-xs w-full px-8 animate-in fade-in zoom-in duration-500">
+        <div className="relative mb-6">
+          <FileDown className="h-20 w-20 text-white drop-shadow-md" strokeWidth={1.5} />
+          <Cloud className="absolute -bottom-2 -left-2 h-10 w-10 text-[#5b45ff] fill-white drop-shadow-sm" strokeWidth={0} />
         </div>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground mb-8">
+        <h1 className="font-display text-4xl font-bold tracking-tight mb-8 drop-shadow-md">
           Smart Docs
         </h1>
-        <Progress value={progress} className="h-2 w-full" />
+        <Progress value={progress} className="h-1.5 w-full bg-white/20 [&>div]:bg-white" />
+      </div>
+      <div className="pb-10 animate-in fade-in duration-1000 delay-300">
+        <p className="text-sm font-medium tracking-wide text-white/90">Doc Base</p>
       </div>
     </div>
   );

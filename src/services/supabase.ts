@@ -55,5 +55,6 @@ export type DocumentRow = {
   priority: boolean;
   status: DocStatus;
   file_url: string | null;
+  source: string | null;
   created_at: string;
 };

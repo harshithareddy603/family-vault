@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase, type DocumentRow, type DocStatus } from "@/services/supabase";
 import { useAuth } from "./useAuth";
+import Tesseract from "tesseract.js";
 
 const computeStatus = (expiry: string | null): DocStatus => {
   if (!expiry) return "safe";
@@ -78,7 +79,27 @@ export const useDocuments = () => {
   }) => {
     if (!user) return { error: new Error("Not signed in") };
     let file_url: string | null = null;
+    let detectedSource = input.source;
+
     if (input.file) {
+      // Run OCR if it's an image
+      if (input.file.type.startsWith("image/")) {
+        try {
+          const result = await Tesseract.recognize(input.file, "eng", {
+            logger: m => console.log(m)
+          });
+          const text = result.data.text.toLowerCase();
+          
+          if (text.includes("aadhaar") || text.includes("uidai")) {
+            detectedSource = "aadhaar";
+          } else if (text.includes("pan") || text.includes("income tax")) {
+            detectedSource = "pan";
+          }
+        } catch (e) {
+          console.error("OCR failed:", e);
+        }
+      }
+
       file_url = await uploadFile(input.file);
     }
     const status = computeStatus(input.expiry_date ?? null);
@@ -91,7 +112,7 @@ export const useDocuments = () => {
       priority: !!input.priority,
       status,
       file_url,
-      source: input.source ?? null,
+      source: detectedSource ?? null,
     });
     if (!error) await fetchDocuments();
     return { error };

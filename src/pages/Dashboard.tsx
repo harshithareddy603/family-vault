@@ -8,14 +8,15 @@ import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car } from "lucide-react";
 
-const getDocumentLogo = (name: string, category: string) => {
+const getDocumentLogo = (name: string, category: string, source: string | null) => {
   const n = name.toLowerCase();
   const c = category.toLowerCase();
+  const s = source?.toLowerCase() || "";
   
-  if (n.includes("aadhaar") || c.includes("aadhaar")) {
+  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar")) {
     return <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/cf/Aadhaar_Logo.svg/1200px-Aadhaar_Logo.svg.png" alt="Aadhaar" className="h-8 w-12 object-contain" />;
   }
-  if (n.includes("pan") || c.includes("pan")) {
+  if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
     return <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Income_Tax_Department_Logo.png" alt="PAN" className="h-8 w-8 object-contain" />;
   }
   
@@ -84,15 +85,10 @@ const Dashboard = () => {
           </Avatar>
         </div>
         <p className="text-sm text-white/90 mb-4 leading-snug">
-          Smart Docs 'Issued Documents' are at par with original documents as per IT ACT.
+          Smart Doc's stores the files as per the user uploades.
         </p>
         <div className="flex items-center justify-between bg-[#382bdc] rounded-xl p-3">
           <span className="font-semibold text-sm">Issued Documents</span>
-          <Link to="/documents">
-            <Button size="sm" variant="secondary" className="bg-white text-[#4a3aff] hover:bg-white/90 text-xs h-7 rounded-full px-4">
-              See All
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -111,7 +107,7 @@ const Dashboard = () => {
             {filteredDocuments.map((d) => (
               <li key={d.id} className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50">
                 <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary/50 rounded-xl overflow-hidden">
-                  {getDocumentLogo(d.name, d.category)}
+                  {getDocumentLogo(d.name, d.category, d.source)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate text-foreground">{d.name}</p>
