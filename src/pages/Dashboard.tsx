@@ -99,7 +99,7 @@ const Dashboard = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 20,
+    padding: 0,
   },
   header: {
     backgroundColor: '#4a3aff',

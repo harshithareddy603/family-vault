@@ -60,7 +60,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
         {/* Main content */}
         <ScrollView contentContainerStyle={styles.mainContent}>
-          {children}
+          <View style={styles.contentWrapper}>
+            {children}
+          </View>
         </ScrollView>
 
         {/* Bottom tab navigation */}
@@ -116,7 +118,6 @@ const styles = StyleSheet.create({
   responsiveWrapper: {
     flex: 1,
     width: '100%',
-    maxWidth: 600, // Limits the width on desktop/tablets
     backgroundColor: '#F8FAFC', // App's actual background
     position: 'relative',
     shadowColor: '#000',
@@ -186,9 +187,14 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flexGrow: 1,
+    paddingBottom: 100, // Extra space for bottom nav
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 1000,
+    alignSelf: 'center',
     paddingHorizontal: 16,
     paddingVertical: 20,
-    paddingBottom: 100, // Extra space for bottom nav
   },
   bottomNav: {
     position: 'absolute',

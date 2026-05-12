@@ -253,25 +253,35 @@ const Documents = () => {
                     <TouchableOpacity 
                       style={styles.iconBtn} 
                       onPress={() => {
-                        Alert.alert(
-                          "Delete Document",
-                          "Are you sure you want to delete this document? This action cannot be undone.",
-                          [
-                            { text: "Cancel", style: "cancel" },
-                            { 
-                              text: "Delete", 
-                              style: "destructive", 
-                              onPress: async () => {
-                                const { error } = await deleteDocument(d.id);
-                                if (error) {
-                                  Alert.alert("Error", "Failed to delete document: " + error.message);
-                                } else {
-                                  Alert.alert("Success", "Document deleted successfully.");
-                                }
-                              } 
-                            }
-                          ]
-                        );
+                        const title = "Delete Document";
+                        const message = "Are you sure you want to delete this document? This action cannot be undone.";
+                        
+                        if (Platform.OS === 'web') {
+                          if (window.confirm(`${title}\n\n${message}`)) {
+                            (async () => {
+                              const { error } = await deleteDocument(d.id);
+                              if (error) Alert.alert("Error", "Failed to delete: " + error.message);
+                              else Alert.alert("Success", "Document deleted.");
+                            })();
+                          }
+                        } else {
+                          Alert.alert(
+                            title,
+                            message,
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              { 
+                                text: "Delete", 
+                                style: "destructive", 
+                                onPress: async () => {
+                                  const { error } = await deleteDocument(d.id);
+                                  if (error) Alert.alert("Error", "Failed to delete: " + error.message);
+                                  else Alert.alert("Success", "Document deleted.");
+                                } 
+                              }
+                            ]
+                          );
+                        }
                       }}
                     >
                       <Feather name="trash-2" size={16} color="#EF4444" />
@@ -421,6 +431,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  scrollContent: {
+    padding: 0,
+  },
   offlineBanner: {
     backgroundColor: '#FEF3C7',
     padding: 8,
@@ -515,13 +528,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   list: {
-    paddingBottom: 100,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 0,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#000',
@@ -529,6 +544,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    flexDirection: 'column',
+    width: Platform.OS === 'web' ? '48.5%' : '100%',
+    minWidth: 280,
   },
   selectedCard: {
     borderColor: '#3b82f6',

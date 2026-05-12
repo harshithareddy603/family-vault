@@ -198,7 +198,7 @@ const Family = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 0,
   },
   header: {
     marginBottom: 20,
@@ -233,13 +233,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   list: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     paddingBottom: 100,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 0,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#000',
@@ -247,6 +250,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    width: Platform.OS === 'web' ? '48.5%' : '100%',
+    minWidth: 280,
   },
   cardRow: {
     flexDirection: 'row',
@@ -334,14 +339,18 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+    alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderRadius: Platform.OS === 'web' ? 24 : 0,
     padding: 24,
     maxHeight: '80%',
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : '100%',
   },
   modalTitle: {
     fontSize: 20,

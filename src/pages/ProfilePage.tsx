@@ -286,7 +286,7 @@ const ProfilePage = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 0,
     paddingBottom: 100,
   },
   header: {

@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
-    maxWidth: 500,
+    maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
   },

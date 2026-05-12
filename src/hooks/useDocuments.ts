@@ -197,24 +197,32 @@ export const useDocuments = () => {
 
   const deleteDocument = useCallback(async (id: string) => {
     try {
+      console.log("Starting deletion for document:", id);
       const doc = documents.find((d) => d.id === id);
       if (doc?.file_url) {
+        console.log("Deleting storage file:", doc.file_url);
         // 1. Delete from Supabase Storage
         const { error: storageError } = await supabase.storage.from("documents").remove([doc.file_url]);
         if (storageError) {
           console.error("Storage deletion failed:", storageError);
-          // We continue even if storage delete fails to avoid orphaned DB records
         }
         
         // 2. Delete from local cache
         await deleteFileLocal(doc.file_url);
       }
       // 3. Delete from Database
+      console.log("Deleting database record for:", id);
       const { error } = await supabase.from("documents").delete().eq("id", id);
-      if (!error) await fetchDocuments();
-      return { error };
+      if (error) {
+        console.error("Database deletion failed:", error);
+        return { error };
+      }
+      
+      console.log("Deletion successful, fetching documents...");
+      await fetchDocuments();
+      return { error: null };
     } catch (e: any) {
-      console.error("Delete failed:", e);
+      console.error("Delete exception:", e);
       return { error: e };
     }
   }, [documents, fetchDocuments]);
