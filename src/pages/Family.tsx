@@ -30,12 +30,14 @@ const Family = () => {
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("Father");
   const [age, setAge] = useState<string>("");
+  const [bloodGroup, setBloodGroup] = useState("");
+  const [address, setAddress] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
   useEffect(() => { document.title = "Family · Smart Docs"; }, []);
 
-  const reset = () => { setName(""); setRelation("Father"); setAge(""); setEditingId(null); };
+  const reset = () => { setName(""); setRelation("Father"); setAge(""); setBloodGroup(""); setAddress(""); setEditingId(null); setTermsAccepted(false); };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +45,13 @@ const Family = () => {
       toast.error("Please accept the terms to continue.");
       return;
     }
-    const payload = { name, relation, age: age ? parseInt(age, 10) : null };
+    const payload = { 
+      name, 
+      relation, 
+      age: age ? parseInt(age, 10) : null,
+      blood_group: bloodGroup || null,
+      address: address || null,
+    };
     const { error } = editingId
       ? await updateMember(editingId, payload)
       : await addMember(payload);
@@ -55,6 +63,8 @@ const Family = () => {
     const m = members.find((x) => x.id === id);
     if (!m) return;
     setEditingId(id); setName(m.name); setRelation(m.relation); setAge(m.age?.toString() ?? "");
+    setBloodGroup(m.blood_group ?? ""); setAddress(m.address ?? "");
+    setTermsAccepted(true);
     setOpen(true);
   };
 

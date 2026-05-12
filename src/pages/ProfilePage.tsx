@@ -19,6 +19,7 @@ const ProfilePage = () => {
   const [bloodGroup, setBloodGroup] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     document.title = "Profile · Smart Docs";
@@ -41,6 +42,7 @@ const ProfilePage = () => {
       toast.error(error.message);
     } else {
       toast.success("Profile updated successfully");
+      setIsEditing(false);
     }
   };
 
@@ -90,31 +92,45 @@ const ProfilePage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserIcon className="h-4 w-4 text-primary" /> Edit Profile
+            <CardTitle className="text-base flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4 text-primary" /> Profile Details
+              </div>
+              {!isEditing && (
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                  Edit Profile
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-2">
                 <Label>Full Name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input value={name} onChange={(e) => setName(e.target.value)} required disabled={!isEditing} />
               </div>
               <div className="space-y-2">
                 <Label>Phone Number</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isEditing} />
               </div>
               <div className="space-y-2">
                 <Label>Blood Group (optional)</Label>
-                <Input value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} placeholder="e.g. O+" />
+                <Input value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} placeholder="e.g. O+" disabled={!isEditing} />
               </div>
               <div className="space-y-2">
                 <Label>Address (optional)</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} disabled={!isEditing} />
               </div>
-              <Button type="submit" className="w-full" disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
-              </Button>
+              {isEditing && (
+                <div className="flex gap-2 pt-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)} disabled={saving}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-gradient-hero" disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
