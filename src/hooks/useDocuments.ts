@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase, type DocumentRow, type DocStatus } from "@/services/supabase";
 import { useAuth } from "./useAuth";
 import Tesseract from "tesseract.js";
+import { saveFileLocal, getFileLocal, deleteFileLocal } from "@/lib/db";
 
 const computeStatus = (expiry: string | null): DocStatus => {
   if (!expiry) return "safe";
@@ -63,11 +64,29 @@ export const useDocuments = () => {
   };
 
   const getSignedUrl = async (path: string, expiresIn = 3600) => {
+    // 1. Check local cache first
+    const localBlob = await getFileLocal(path);
+    if (localBlob) {
+      console.log("Serving from local cache:", path);
+      return URL.createObjectURL(localBlob);
+    }
+
+    // 2. Fetch from Supabase
     const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
     if (error) {
       console.error("Error creating signed URL:", error);
       return null;
     }
+
+    // 3. Lazy cache: Download and save for next time
+    try {
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      await saveFileLocal(path, blob);
+    } catch (e) {
+      console.error("Failed to lazy cache file", e);
+    }
+
     return data.signedUrl;
   };
 
@@ -131,7 +150,12 @@ export const useDocuments = () => {
       file_url,
       source: detectedSource ?? null,
     });
-    if (!error) await fetchDocuments();
+    if (!error) {
+      if (input.file && file_url) {
+        await saveFileLocal(file_url, input.file);
+      }
+      await fetchDocuments();
+    }
     return { error };
   };
 
@@ -148,6 +172,7 @@ export const useDocuments = () => {
     const doc = documents.find((d) => d.id === id);
     if (doc?.file_url) {
       await supabase.storage.from("documents").remove([doc.file_url]);
+      await deleteFileLocal(doc.file_url);
     }
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (!error) await fetchDocuments();
