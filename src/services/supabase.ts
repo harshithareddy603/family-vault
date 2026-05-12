@@ -8,7 +8,7 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
 if (!isSupabaseConfigured) {
   // eslint-disable-next-line no-console
   console.warn(
-    "[Zerra Docs] Supabase env vars missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Workspace → Build Secrets."
+    "[Smart Docs] Supabase env vars missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Workspace → Build Secrets."
   );
 }
 

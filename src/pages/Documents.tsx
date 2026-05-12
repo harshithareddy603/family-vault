@@ -34,7 +34,7 @@ const Documents = () => {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { document.title = "Documents · Zerra Docs"; }, []);
+  useEffect(() => { document.title = "Documents · Smart Docs"; }, []);
 
   const reset = () => {
     setName(""); setCategory("ID"); setExpiry(""); setOwner("self"); setPriority(false); setFile(null);

@@ -29,7 +29,7 @@ const Family = () => {
   const [relation, setRelation] = useState("Father");
   const [age, setAge] = useState<string>("");
 
-  useEffect(() => { document.title = "Family · Zerra Docs"; }, []);
+  useEffect(() => { document.title = "Family · Smart Docs"; }, []);
 
   const reset = () => { setName(""); setRelation("Father"); setAge(""); setEditingId(null); };
 

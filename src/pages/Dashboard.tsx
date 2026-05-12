@@ -13,7 +13,7 @@ const Dashboard = () => {
   const { members } = useFamily();
   const { documents } = useDocuments();
 
-  useEffect(() => { document.title = "Dashboard · Zerra Docs"; }, []);
+  useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
   const stats = useMemo(() => {
     const expired = documents.filter((d) => d.status === "expired").length;
