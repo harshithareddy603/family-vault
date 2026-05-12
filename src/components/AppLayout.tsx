@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, SafeAreaView } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, SafeAreaView, Platform } from 'react-native'
 import React, { ReactNode, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useDocuments } from "../hooks/useDocuments";
