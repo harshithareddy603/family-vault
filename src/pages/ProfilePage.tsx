@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert } from 'react-native'
 import React, { useEffect, useState } from "react";
+import * as ImagePicker from 'expo-image-picker';
 import { AppLayout } from "../components/AppLayout";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../services/supabase";
@@ -40,6 +41,51 @@ const ProfilePage = () => {
     }
   };
 
+  const handleUpdateAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (result.canceled) return;
+
+      setSaving(true);
+      const asset = result.assets[0];
+      const fileExt = asset.uri.split('.').pop();
+      const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Convert URI to Blob for upload
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, blob);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (updateError) throw updateError;
+
+      Alert.alert("Success", "Profile picture updated!");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update profile picture");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!user?.email) return;
     const { error } = await supabase.auth.resetPasswordForEmail(user.email);
@@ -60,13 +106,24 @@ const ProfilePage = () => {
         </View>
 
         <View style={styles.profileHeader}>
-          <TouchableOpacity onPress={() => setShowImageModal(true)}>
+          <View style={styles.avatarContainer}>
             {user?.user_metadata?.avatar_url ? (
               <Image source={{ uri: user.user_metadata.avatar_url }} style={styles.avatar} />
             ) : (
               <Avatar.Text size={96} label={userInitials} style={styles.avatarFallback} labelStyle={styles.avatarLabel} />
             )}
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.changePhotoBadge} 
+              onPress={handleUpdateAvatar}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Feather name="camera" size={16} color="#fff" />
+              )}
+            </TouchableOpacity>
+          </View>
           <View style={styles.profileSummary}>
             <Text style={styles.userName}>{name || "User"}</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
@@ -212,6 +269,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
+  avatarContainer: {
+    position: 'relative',
+  },
   avatar: {
     width: 96,
     height: 96,
@@ -222,6 +282,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+  },
+  changePhotoBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#3b82f6',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    elevation: 4,
   },
   avatarFallback: {
     backgroundColor: '#3b82f6',
