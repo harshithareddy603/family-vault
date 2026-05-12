@@ -251,6 +251,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
+    maxWidth: 500,
+    width: '100%',
+    alignSelf: 'center',
   },
   warningTextContainer: {
     marginLeft: 12,
@@ -275,6 +278,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
+    maxWidth: 500,
+    width: '100%',
+    alignSelf: 'center',
   },
   tabs: {
     flexDirection: 'row',

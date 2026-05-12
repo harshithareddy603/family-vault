@@ -24,83 +24,85 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Compact mobile top bar */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
-          </View>
-          <View style={styles.logoTextContainer}>
-            <Text style={styles.logoTitle}>Smart Docs</Text>
-            {user?.email && (
-              <Text style={styles.logoSubtitle} numberOfLines={1}>{user.email}</Text>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setShowNotifications(true)}
-          >
-            <Feather name="bell" size={20} color="#374151" />
-            {notificationsCount > 0 && (
-              <View style={styles.notificationDot} />
-            )}
+      <View style={styles.responsiveWrapper}>
+        {/* Compact mobile top bar */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} style={styles.logoContainer}>
+            <View style={styles.logoIcon}>
+              <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
+            </View>
+            <View style={styles.logoTextContainer}>
+              <Text style={styles.logoTitle}>Smart Docs</Text>
+              {user?.email && (
+                <Text style={styles.logoSubtitle} numberOfLines={1}>{user.email}</Text>
+              )}
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={async () => { await signOut(); navigation.navigate("Auth"); }}
-          >
-            <Feather name="log-out" size={20} color="#374151" />
-          </TouchableOpacity>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setShowNotifications(true)}
+            >
+              <Feather name="bell" size={20} color="#374151" />
+              {notificationsCount > 0 && (
+                <View style={styles.notificationDot} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={async () => { await signOut(); navigation.navigate("Auth"); }}
+            >
+              <Feather name="log-out" size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Main content */}
-      <ScrollView contentContainerStyle={styles.mainContent}>
-        {children}
-      </ScrollView>
+        {/* Main content */}
+        <ScrollView contentContainerStyle={styles.mainContent}>
+          {children}
+        </ScrollView>
 
-      {/* Bottom tab navigation */}
-      <View style={styles.bottomNav}>
-        <View style={styles.navGrid}>
-          {links.map((l) => {
-            const isActive = route.name === l.to;
-            return (
-              <TouchableOpacity
-                key={l.to}
-                onPress={() => navigation.navigate(l.to)}
-                style={styles.navItem}
-              >
-                <View style={[styles.navIconContainer, isActive && styles.navIconActive]}>
-                  <MaterialCommunityIcons 
-                    name={l.icon as any} 
-                    size={20} 
-                    color={isActive ? "#3b82f6" : "#6b7280"} 
-                  />
-                  {l.label === "Docs" && notificationsCount > 0 && (
-                    <View style={styles.navBadge}>
-                      <Text style={styles.navBadgeText}>
-                        {notificationsCount > 9 ? '9+' : notificationsCount}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                  {l.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Bottom tab navigation */}
+        <View style={styles.bottomNav}>
+          <View style={styles.navGrid}>
+            {links.map((l) => {
+              const isActive = route.name === l.to;
+              return (
+                <TouchableOpacity
+                  key={l.to}
+                  onPress={() => navigation.navigate(l.to)}
+                  style={styles.navItem}
+                >
+                  <View style={[styles.navIconContainer, isActive && styles.navIconActive]}>
+                    <MaterialCommunityIcons 
+                      name={l.icon as any} 
+                      size={20} 
+                      color={isActive ? "#3b82f6" : "#6b7280"} 
+                    />
+                    {l.label === "Docs" && notificationsCount > 0 && (
+                      <View style={styles.navBadge}>
+                        <Text style={styles.navBadgeText}>
+                          {notificationsCount > 9 ? '9+' : notificationsCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                    {l.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
 
-      <NotificationsSheet 
-        documents={documents}
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
+        <NotificationsSheet 
+          documents={documents}
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -108,17 +110,30 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9', // Slightly darker background for the "gutter" area
+    alignItems: 'center',
+  },
+  responsiveWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 600, // Limits the width on desktop/tablets
+    backgroundColor: '#F8FAFC', // App's actual background
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
   header: {
     flexDirection: 'row',
-    height: 56,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#FFFFFF',
   },
   logoContainer: {
     flexDirection: 'row',
@@ -132,11 +147,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   logoTextContainer: {
     marginLeft: 12,
@@ -157,16 +167,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   notificationDot: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 10,
+    right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -178,7 +188,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingVertical: 20,
-    paddingBottom: 100,
+    paddingBottom: 100, // Extra space for bottom nav
   },
   bottomNav: {
     position: 'absolute',
@@ -187,12 +197,13 @@ const styles = StyleSheet.create({
     right: 0,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    height: Platform.OS === 'ios' ? 84 : 74,
   },
   navGrid: {
     flexDirection: 'row',
-    height: 64,
+    flex: 1,
   },
   navItem: {
     flex: 1,
