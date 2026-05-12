@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/services/supabase";
 import { toast } from "sonner";
 import { LogOut, Key, User as UserIcon } from "lucide-react";
@@ -15,6 +16,8 @@ const ProfilePage = () => {
   
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
+  const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -22,6 +25,8 @@ const ProfilePage = () => {
     if (user?.user_metadata) {
       setName(user.user_metadata.name || user.user_metadata.full_name || "");
       setPhone(user.user_metadata.phone || "");
+      setBloodGroup(user.user_metadata.blood_group || "");
+      setAddress(user.user_metadata.address || "");
     }
   }, [user]);
 
@@ -29,7 +34,7 @@ const ProfilePage = () => {
     e.preventDefault();
     setSaving(true);
     const { error } = await supabase.auth.updateUser({
-      data: { name, phone, full_name: name }
+      data: { name, phone, full_name: name, blood_group: bloodGroup, address }
     });
     setSaving(false);
     if (error) {
@@ -59,9 +64,24 @@ const ProfilePage = () => {
 
       <div className="space-y-6 pb-20">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <Avatar className="h-20 w-20 bg-primary text-primary-foreground text-2xl">
-            <AvatarFallback className="bg-primary text-primary-foreground font-semibold">{userInitials}</AvatarFallback>
-          </Avatar>
+          <Dialog>
+            <DialogTrigger>
+              <Avatar className="h-24 w-24 bg-primary text-primary-foreground text-3xl shadow-md border-4 border-white cursor-pointer transition-transform hover:scale-105">
+                {user?.user_metadata?.avatar_url ? (
+                  <AvatarImage src={user.user_metadata.avatar_url} className="object-cover object-[center_20%]" />
+                ) : (
+                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">{userInitials}</AvatarFallback>
+                )}
+              </Avatar>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] p-0 border-none bg-transparent shadow-none flex justify-center">
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full max-w-sm rounded-xl object-contain bg-black/50" />
+              ) : (
+                <div className="h-64 w-64 bg-primary rounded-xl flex items-center justify-center text-6xl text-white font-bold">{userInitials}</div>
+              )}
+            </DialogContent>
+          </Dialog>
           <div className="text-center">
             <h2 className="font-semibold text-lg">{name || "User"}</h2>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -83,6 +103,14 @@ const ProfilePage = () => {
               <div className="space-y-2">
                 <Label>Phone Number</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Blood Group (optional)</Label>
+                <Input value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} placeholder="e.g. O+" />
+              </div>
+              <div className="space-y-2">
+                <Label>Address (optional)</Label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
@@ -108,7 +136,7 @@ const ProfilePage = () => {
         </Card>
 
         <div className="pt-4 flex flex-col items-center space-y-4">
-          <p className="text-xs text-muted-foreground">Version 1.0.0</p>
+          <p className="text-xs text-muted-foreground">Version 1.0.1</p>
           <Button variant="destructive" className="w-full" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" /> Sign Out
           </Button>

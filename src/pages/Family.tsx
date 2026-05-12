@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Drawer,
   DrawerContent,
@@ -29,6 +30,7 @@ const Family = () => {
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("Father");
   const [age, setAge] = useState<string>("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
   useEffect(() => { document.title = "Family · Smart Docs"; }, []);
@@ -37,6 +39,10 @@ const Family = () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!termsAccepted) {
+      toast.error("Please accept the terms to continue.");
+      return;
+    }
     const payload = { name, relation, age: age ? parseInt(age, 10) : null };
     const { error } = editingId
       ? await updateMember(editingId, payload)
@@ -55,7 +61,7 @@ const Family = () => {
   return (
     <AppLayout>
       <div className="mb-5">
-        <h1 className="font-display text-2xl font-bold">Family</h1>
+        <h1 className="font-display text-2xl font-bold">Family Doc's</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Manage your loved ones.</p>
       </div>
 
@@ -155,10 +161,16 @@ const Family = () => {
             </div>
             <div className="space-y-2">
               <Label>Age</Label>
-              <Input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} />
+              <Input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} required />
+            </div>
+            <div className="flex items-start gap-2 pt-2">
+              <Checkbox id="terms" checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(!!v)} required />
+              <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug">
+                Please try to save correct details for accessing the files easily.
+              </label>
             </div>
             <DrawerFooter className="px-0">
-              <Button type="submit" className="w-full bg-gradient-hero">
+              <Button type="submit" className="w-full bg-gradient-hero" disabled={!termsAccepted}>
                 {editingId ? "Save changes" : "Add member"}
               </Button>
             </DrawerFooter>

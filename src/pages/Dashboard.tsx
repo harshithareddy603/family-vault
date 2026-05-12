@@ -81,30 +81,24 @@ const Dashboard = () => {
             <h1 className="text-xl font-bold font-display">Welcome, {name}!</h1>
           </div>
           <Avatar className="h-12 w-12 border-2 border-white/20">
-            {avatarUrl ? <AvatarImage src={avatarUrl} /> : <AvatarFallback className="bg-primary-foreground text-primary">{name.charAt(0)}</AvatarFallback>}
+            {avatarUrl ? <AvatarImage src={avatarUrl} className="object-cover object-[center_20%]" /> : <AvatarFallback className="bg-primary-foreground text-primary">{name.charAt(0)}</AvatarFallback>}
           </Avatar>
         </div>
         <p className="text-sm text-white/90 mb-4 leading-snug">
           Smart Doc's stores the files as per the user uploades.
         </p>
-        <div className="flex items-center justify-between bg-[#382bdc] rounded-xl p-3">
-          <span className="font-semibold text-sm">Issued Documents</span>
-        </div>
       </div>
 
       {/* Document List */}
       <Card className="p-4 shadow-card mb-5 border-none bg-transparent shadow-none">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-base font-semibold">My documents</h2>
-          <Link to="/documents" className="text-xs text-primary font-medium flex items-center">
-            All <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
         </div>
         {filteredDocuments.length === 0 ? (
           <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
         ) : (
           <ul className="space-y-2">
-            {filteredDocuments.map((d) => (
+            {filteredDocuments.slice(0, 1).map((d) => (
               <li key={d.id} className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50">
                 <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary/50 rounded-xl overflow-hidden">
                   {getDocumentLogo(d.name, d.category, d.source)}

@@ -20,6 +20,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -41,12 +42,12 @@ const Auth = () => {
         setBusy(false);
         return;
       }
-      if (photo.size > 2 * 1024 * 1024) {
-        toast.error("Profile photo must be less than 2MB.");
+      if (photo.size > 3 * 1024 * 1024) {
+        toast.error("Profile photo must be less than 3MB.");
         setBusy(false);
         return;
       }
-      const { error } = await signUp({ email, password, name, photo });
+      const { error } = await signUp({ email, password, name, phone, photo });
       if (error) toast.error(error.message);
       else toast.success("Account created. Check your email to verify (if required).");
     }
@@ -88,7 +89,11 @@ const Auth = () => {
                   <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required={mode === "signup"} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="photo">Profile Photo (Max 2MB)</Label>
+                  <Label htmlFor="phone">Mobile Number</Label>
+                  <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required={mode === "signup"} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="photo">Profile Photo (Max 3MB)</Label>
                   <Input 
                     id="photo" 
                     type="file" 
@@ -96,8 +101,8 @@ const Auth = () => {
                     onChange={(e) => setPhoto(e.target.files?.[0] || null)} 
                     required={mode === "signup"} 
                   />
-                  {photo && photo.size > 2 * 1024 * 1024 && (
-                    <p className="text-xs text-destructive">File size exceeds 2MB limit.</p>
+                  {photo && photo.size > 3 * 1024 * 1024 && (
+                    <p className="text-xs text-destructive">File size exceeds 3MB limit.</p>
                   )}
                 </div>
               </TabsContent>

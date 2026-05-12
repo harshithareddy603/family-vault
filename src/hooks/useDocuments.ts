@@ -98,6 +98,11 @@ export const useDocuments = () => {
         } catch (e) {
           console.error("OCR failed:", e);
         }
+      } else {
+        // Fallback for PDFs and other docs
+        const fname = input.file.name.toLowerCase();
+        if (fname.includes("aadhaar")) detectedSource = "aadhaar";
+        else if (fname.includes("pan")) detectedSource = "pan";
       }
 
       file_url = await uploadFile(input.file);

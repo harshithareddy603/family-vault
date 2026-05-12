@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useDocuments } from "./useDocuments";
 import type { DocumentRow } from "@/services/supabase";
+import { useAuth } from "./useAuth";
 
 export const useDocumentsWithCache = () => {
+  const { user } = useAuth();
   const docsHook = useDocuments();
   const [cachedDocs, setCachedDocs] = useState<DocumentRow[]>([]);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -22,21 +24,30 @@ export const useDocumentsWithCache = () => {
 
   useEffect(() => {
     // Load from cache on mount
-    const saved = localStorage.getItem("smartdocs_cache");
-    if (saved) {
-      try {
-        setCachedDocs(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse cached documents", e);
+    if (user) {
+      const saved = localStorage.getItem(`smartdocs_cache_${user.id}`);
+      if (saved) {
+        try {
+          setCachedDocs(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse cached documents", e);
+        }
+      } else {
+        setCachedDocs([]);
       }
+    } else {
+      setCachedDocs([]);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     // Save to cache when documents are fetched successfully
-    if (docsHook.documents.length > 0 && !docsHook.loading) {
-      localStorage.setItem("smartdocs_cache", JSON.stringify(docsHook.documents));
+    if (user && docsHook.documents.length > 0 && !docsHook.loading) {
+      localStorage.setItem(`smartdocs_cache_${user.id}`, JSON.stringify(docsHook.documents));
       setCachedDocs(docsHook.documents);
+    } else if (user && docsHook.documents.length === 0 && !docsHook.loading) {
+      localStorage.removeItem(`smartdocs_cache_${user.id}`);
+      setCachedDocs([]);
     }
   }, [docsHook.documents, docsHook.loading]);
 

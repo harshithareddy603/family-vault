@@ -27,7 +27,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
-const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired", "⭐ Priority"];
+const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
@@ -38,7 +38,6 @@ const Documents = () => {
   const [category, setCategory] = useState("ID");
   const [expiry, setExpiry] = useState("");
   const [owner, setOwner] = useState<string>("self");
-  const [priority, setPriority] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
@@ -55,6 +54,8 @@ const Documents = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [sortBy, setSortBy] = useState("newest_first");
+  const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("all");
+  const [familyMemberFilter, setFamilyMemberFilter] = useState<string>("all");
 
   useEffect(() => { document.title = "Documents · Smart Docs"; }, []);
 
@@ -70,7 +71,6 @@ const Documents = () => {
       category,
       expiry_date: expiry || null,
       family_member_id: owner === "self" ? null : owner,
-      priority,
       file,
     });
     setBusy(false);
@@ -145,6 +145,14 @@ const Documents = () => {
           return d.category === activeFilter;
         }
       }
+      
+      // 3. Owner Filter
+      if (ownerFilter === "myself" && d.family_member_id !== null) return false;
+      if (ownerFilter === "family") {
+        if (d.family_member_id === null) return false;
+        if (familyMemberFilter !== "all" && d.family_member_id !== familyMemberFilter) return false;
+      }
+      
       return true;
     })
     .sort((a, b) => {
@@ -206,6 +214,32 @@ const Documents = () => {
             {selectionMode ? "Cancel" : "Select"}
           </Button>
         </div>
+      </div>
+      <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+        <Select value={ownerFilter} onValueChange={(v: "all" | "myself" | "family") => { setOwnerFilter(v); setFamilyMemberFilter("all"); }}>
+          <SelectTrigger className="w-[120px] h-8 text-xs bg-card border border-border/50 shadow-sm rounded-full">
+            <SelectValue placeholder="Show" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Owners</SelectItem>
+            <SelectItem value="myself">Myself</SelectItem>
+            <SelectItem value="family">Family</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {ownerFilter === "family" && (
+          <Select value={familyMemberFilter} onValueChange={setFamilyMemberFilter}>
+            <SelectTrigger className="w-[140px] h-8 text-xs bg-card border border-border/50 shadow-sm rounded-full">
+              <SelectValue placeholder="Family Member" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Members</SelectItem>
+              {members.map(m => (
+                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="flex items-center gap-2 mb-4">
@@ -412,17 +446,33 @@ const Documents = () => {
                 <SelectContent>
                   <SelectItem value="self">Myself</SelectItem>
                   {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} ({m.relation})</SelectItem>)}
+                  {members.length === 0 && (
+                    <div className="p-2 w-full">
+                      <Link to="/family">
+                        <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setOpen(false)}>
+                          + Add Family Member
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>File (optional)</Label>
-              <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <Label>File</Label>
+              <div className="flex items-center gap-3">
+                <Input type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="flex-1" />
+                {file && <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />}
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="relative h-6 w-6 flex-shrink-0 flex items-center justify-center">
+                    <svg className="animate-spin h-full w-full text-primary" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={priority} onCheckedChange={(v) => setPriority(!!v)} />
-              Mark as priority
-            </label>
             <DrawerFooter className="px-0">
               <Button type="submit" className="w-full bg-gradient-hero" disabled={busy}>
                 {busy ? "Saving…" : "Save document"}
