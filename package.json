@@ -10,7 +10,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "npx expo export -p web",
+    "vercel-build": "npm run build",
     "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.10",
