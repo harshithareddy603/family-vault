@@ -62,19 +62,27 @@ const ProfilePage = () => {
         return;
       }
 
-      const fileExt = asset.uri.split('.').pop();
+      const fileExt = asset.uri.split('.').pop()?.split('?')[0] || 'jpg';
       const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`; // Upload directly to avatars bucket root
+      const filePath = fileName;
 
-      // Convert URI to Blob for upload
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
+      let fileToUpload;
+      if (Platform.OS === 'web') {
+        // For web, we can fetch the blob directly from the URI
+        const response = await fetch(asset.uri);
+        fileToUpload = await response.blob();
+      } else {
+        // For mobile, we use the URI directly or convert to blob
+        const response = await fetch(asset.uri);
+        fileToUpload = await response.blob();
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, {
+        .upload(filePath, fileToUpload, {
           upsert: true,
-          contentType: 'image/jpeg'
+          contentType: asset.mimeType || 'image/jpeg',
+          cacheControl: '3600'
         });
 
       if (uploadError) throw uploadError;
