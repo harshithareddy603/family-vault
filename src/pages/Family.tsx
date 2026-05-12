@@ -4,7 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocuments } from "@/hooks/useDocuments";
@@ -45,80 +52,106 @@ const Family = () => {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Family</h1>
-          <p className="text-muted-foreground mt-1">Manage your loved ones and their documents.</p>
-        </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-hero shadow-soft"><Plus className="h-4 w-4 mr-1" /> Add member</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editingId ? "Edit member" : "Add family member"}</DialogTitle></DialogHeader>
-            <form onSubmit={submit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label>Relation</Label>
-                <Select value={relation} onValueChange={setRelation}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {RELATIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Age</Label>
-                <Input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full">{editingId ? "Save" : "Add"}</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <div className="mb-5">
+        <h1 className="font-display text-2xl font-bold">Family</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage your loved ones.</p>
       </div>
 
       {members.length === 0 ? (
-        <Card className="p-12 text-center shadow-card">
+        <Card className="p-10 text-center shadow-card">
           <Users className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">No family members yet.</p>
+          <p className="text-sm text-muted-foreground">No family members yet.</p>
+          <p className="text-xs text-muted-foreground mt-1">Tap the + button to add one.</p>
         </Card>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <ul className="space-y-3">
           {members.map((m) => {
             const docs = documents.filter((d) => d.family_member_id === m.id);
             const alerts = docs.filter((d) => d.status !== "safe").length;
             return (
-              <Card key={m.id} className="p-5 shadow-card">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-hero text-primary-foreground font-semibold">
-                      {m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.relation}{m.age ? ` · ${m.age}` : ""}</p>
+              <Card key={m.id} className="p-4 shadow-card">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-semibold">
+                    {m.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{m.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {m.relation}{m.age ? ` · ${m.age} yrs` : ""}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1 text-[11px]">
+                      <span className="text-muted-foreground">{docs.length} docs</span>
+                      {alerts > 0 && (
+                        <span className="text-warning font-medium">
+                          {alerts} alert{alerts > 1 ? "s" : ""}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => startEdit(m.id)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={async () => {
-                      const { error } = await deleteMember(m.id);
-                      if (error) toast.error(error.message); else toast.success("Removed");
-                    }}><Trash2 className="h-4 w-4" /></Button>
+                  <div className="flex flex-col gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(m.id)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-danger"
+                      onClick={async () => {
+                        const { error } = await deleteMember(m.id);
+                        if (error) toast.error(error.message); else toast.success("Removed");
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{docs.length} documents</span>
-                  {alerts > 0 && <span className="text-warning font-medium">{alerts} alert{alerts > 1 ? "s" : ""}</span>}
                 </div>
               </Card>
             );
           })}
-        </div>
+        </ul>
       )}
+
+      {/* Floating action button */}
+      <Drawer open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+        <DrawerTrigger asChild>
+          <Button
+            aria-label="Add family member"
+            className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
+            style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>{editingId ? "Edit member" : "Add family member"}</DrawerTitle>
+          </DrawerHeader>
+          <form onSubmit={submit} className="px-4 space-y-4 pb-2">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Relation</Label>
+              <Select value={relation} onValueChange={setRelation}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RELATIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Age</Label>
+              <Input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} />
+            </div>
+            <DrawerFooter className="px-0">
+              <Button type="submit" className="w-full bg-gradient-hero">
+                {editingId ? "Save changes" : "Add member"}
+              </Button>
+            </DrawerFooter>
+          </form>
+        </DrawerContent>
+      </Drawer>
     </AppLayout>
   );
 };
