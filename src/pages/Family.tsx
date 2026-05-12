@@ -28,16 +28,12 @@ const Family = () => {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [relation, setRelation] = useState("Father");
-  const [age, setAge] = useState<string>("");
-  const [bloodGroup, setBloodGroup] = useState("");
-  const [address, setAddress] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
   useEffect(() => { document.title = "Family · Smart Docs"; }, []);
 
-  const reset = () => { setName(""); setRelation("Father"); setAge(""); setBloodGroup(""); setAddress(""); setEditingId(null); setTermsAccepted(false); };
+  const reset = () => { setName(""); setEditingId(null); setTermsAccepted(false); };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +43,6 @@ const Family = () => {
     }
     const payload = { 
       name, 
-      relation, 
-      age: age ? parseInt(age, 10) : null,
     };
     const { error } = editingId
       ? await updateMember(editingId, payload)
@@ -60,8 +54,7 @@ const Family = () => {
   const startEdit = (id: string) => {
     const m = members.find((x) => x.id === id);
     if (!m) return;
-    setEditingId(id); setName(m.name); setRelation(m.relation); setAge(m.age?.toString() ?? "");
-    setBloodGroup(m.blood_group ?? ""); setAddress(m.address ?? "");
+    setEditingId(id); setName(m.name);
     setTermsAccepted(true);
     setOpen(true);
   };
@@ -92,9 +85,7 @@ const Family = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{m.name}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {m.relation}{m.age ? ` · ${m.age} yrs` : ""}
-                    </p>
+
                     <div className="flex items-center gap-3 mt-1 text-[11px]">
                       <span className="text-muted-foreground">{docs.length} docs</span>
                       {alerts > 0 && (
@@ -158,19 +149,6 @@ const Family = () => {
               <Label>Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
-            <div className="space-y-2">
-              <Label>Relation</Label>
-              <Select value={relation} onValueChange={setRelation}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {RELATIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Age</Label>
-              <Input type="number" min={0} value={age} onChange={(e) => setAge(e.target.value)} required />
-            </div>
             <div className="flex items-start gap-2 pt-2">
               <Checkbox id="terms" checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(!!v)} required />
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug">
@@ -203,8 +181,7 @@ const Family = () => {
                 <div className="px-4 pb-8 max-h-[60vh] overflow-y-auto">
                   <div className="mb-4 space-y-1">
                     <p className="text-sm font-medium">Personal Info</p>
-                    <p className="text-xs text-muted-foreground">Relation: {m?.relation}</p>
-                    {m?.age && <p className="text-xs text-muted-foreground">Age: {m.age} years</p>}
+                    <p className="text-xs text-muted-foreground">Name: {m?.name}</p>
                   </div>
                   
                   <p className="text-sm font-medium mb-3">Documents ({mDocs.length})</p>

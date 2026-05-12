@@ -37,10 +37,6 @@ export type FamilyMember = {
   id: string;
   user_id: string;
   name: string;
-  relation: string;
-  age: number | null;
-  blood_group: string | null;
-  address: string | null;
   created_at: string;
 };
 

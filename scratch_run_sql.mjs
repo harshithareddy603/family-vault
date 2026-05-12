@@ -8,9 +8,16 @@ const sql = postgres('postgresql://postgres:Swathireddy@218@db.sxmtcytfvulqevyzf
 
 async function run() {
   try {
-    const schema = fs.readFileSync('db/schema.sql', 'utf8');
-    await sql.unsafe(schema);
-    console.log('Schema executed successfully.');
+    const query = `
+      ALTER TABLE family_members DROP COLUMN IF EXISTS relation;
+      ALTER TABLE family_members DROP COLUMN IF EXISTS age;
+      ALTER TABLE family_members DROP COLUMN IF EXISTS blood_group;
+      ALTER TABLE family_members DROP COLUMN IF EXISTS address;
+      -- Notify postgrest to reload schema cache
+      NOTIFY pgrst, 'reload schema';
+    `;
+    await sql.unsafe(query);
+    console.log('Columns dropped successfully.');
   } catch (err) {
     console.error('Error executing schema:', err);
   } finally {
