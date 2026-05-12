@@ -3,24 +3,49 @@ import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, CheckCircle2, Clock, ChevronRight, HardDrive } from "lucide-react";
-import { DocumentStats } from "@/components/DocumentStats";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
+import { useFamily } from "@/hooks/useFamily";
+import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car } from "lucide-react";
+
+const getDocumentLogo = (name: string, category: string) => {
+  const n = name.toLowerCase();
+  const c = category.toLowerCase();
+  
+  if (n.includes("aadhaar") || c.includes("aadhaar")) {
+    return <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/cf/Aadhaar_Logo.svg/1200px-Aadhaar_Logo.svg.png" alt="Aadhaar" className="h-8 w-12 object-contain" />;
+  }
+  if (n.includes("pan") || c.includes("pan")) {
+    return <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Income_Tax_Department_Logo.png" alt="PAN" className="h-8 w-8 object-contain" />;
+  }
+  
+  if (c === "medical") return <HeartPulse className="h-6 w-6 text-rose-500" />;
+  if (c === "property") return <Building2 className="h-6 w-6 text-indigo-500" />;
+  if (c === "education") return <GraduationCap className="h-6 w-6 text-emerald-500" />;
+  if (c === "insurance" || c === "license") return <Car className="h-6 w-6 text-amber-500" />;
+  
+  return <FileText className="h-6 w-6 text-blue-500" />;
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents } = useDocuments();
+  const { members } = useFamily();
+  const [selectedMember, setSelectedMember] = useState<string>("myself");
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
   const filteredDocuments = useMemo(() => {
-    return documents.filter((d) => d.family_member_id === null);
-  }, [documents]);
+    if (selectedMember === "myself") {
+      return documents.filter((d) => d.family_member_id === null);
+    }
+    return documents.filter((d) => d.family_member_id === selectedMember);
+  }, [documents, selectedMember]);
 
-  const name = user?.user_metadata?.name;
+  const name = user?.user_metadata?.name || "User";
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   const { expiringSoonCount, statusData } = useMemo(() => {
     let expiringSoonCount = 0;
@@ -55,108 +80,68 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="mb-5">
-        <p className="text-sm text-muted-foreground">Welcome back</p>
-        <h1 className="font-display text-2xl font-bold leading-tight">
-          {name ? `Hi, ${name} 👋` : "Hi there 👋"}
-        </h1>
-      </div>
-
-      {expiringSoonCount > 0 && (
-        <Alert variant="destructive" className="mb-6 bg-destructive/10 text-destructive border-none">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Documents Expiring Soon</AlertTitle>
-          <AlertDescription className="mt-1 flex items-center justify-between">
-            <span>{expiringSoonCount} document(s) expire in the next 7 days.</span>
-            <Link to="/documents" className="font-medium hover:underline">View Documents →</Link>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
-            <HardDrive className="h-10 w-10 text-primary mb-4" />
-            <p className="text-3xl font-display font-bold">{documents.length}</p>
-            <p className="text-sm text-muted-foreground">files stored</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6 h-[200px] flex items-center justify-center">
-            {statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground">No documents to chart</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent documents */}
-      <Card className="p-4 shadow-card mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-base font-semibold">My documents</h2>
-          <div className="flex items-center gap-2">
-            <Link to="/documents" className="text-xs text-primary font-medium flex items-center ml-1">
-              All <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
+      {/* Blue Header Section */}
+      <div className="bg-[#4a3aff] text-white rounded-2xl p-5 mb-6 relative overflow-hidden">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-xl font-bold font-display">Welcome, {name}!</h1>
           </div>
+          <Avatar className="h-12 w-12 border-2 border-white/20">
+            {avatarUrl ? <AvatarImage src={avatarUrl} /> : <AvatarFallback className="bg-primary-foreground text-primary">{name.charAt(0)}</AvatarFallback>}
+          </Avatar>
+        </div>
+        <p className="text-sm text-white/90 mb-4 leading-snug">
+          Smart Docs 'Issued Documents' are at par with original documents as per IT ACT.
+        </p>
+        <div className="flex items-center justify-between bg-[#382bdc] rounded-xl p-3">
+          <span className="font-semibold text-sm">Issued Documents</span>
+          <Link to="/documents">
+            <Button size="sm" variant="secondary" className="bg-white text-[#4a3aff] hover:bg-white/90 text-xs h-7 rounded-full px-4">
+              See All
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Document List */}
+      <Card className="p-4 shadow-card mb-5 border-none bg-transparent shadow-none">
+        <div className="flex items-center justify-between mb-4">
+          <Select value={selectedMember} onValueChange={setSelectedMember}>
+            <SelectTrigger className="w-[180px] bg-card border-none shadow-sm rounded-xl h-9">
+              <SelectValue placeholder="Select Member" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="myself">Myself</SelectItem>
+              {members.map(m => (
+                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Link to="/documents" className="text-xs text-primary font-medium flex items-center">
+            All <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
         {filteredDocuments.length === 0 ? (
           <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
         ) : (
           <ul className="space-y-2">
-            {filteredDocuments.slice(0, 5).map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50">
-                <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{d.name}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">
-                    {d.category}{d.expiry_date ? ` · ${d.expiry_date}` : ""}
+            {filteredDocuments.map((d) => (
+              <li key={d.id} className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50">
+                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary/50 rounded-xl overflow-hidden">
+                  {getDocumentLogo(d.name, d.category)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate text-foreground">{d.name}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate uppercase tracking-wider font-medium">
+                    {d.category}
                   </p>
                 </div>
-                <StatusPill status={d.status} />
               </li>
             ))}
           </ul>
         )}
       </Card>
-
-      <DocumentStats />
     </AppLayout>
-  );
-};
-
-const StatusPill = ({ status }: { status: string }) => {
-  const map: Record<string, { cls: string; icon: any; label: string }> = {
-    expired: { cls: "bg-danger/10 text-danger", icon: AlertTriangle, label: "Expired" },
-    soon: { cls: "bg-warning/10 text-warning", icon: Clock, label: "Soon" },
-    safe: { cls: "bg-success/10 text-success", icon: CheckCircle2, label: "Safe" },
-  };
-  const m = map[status] ?? map.safe;
-  const Icon = m.icon;
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium shrink-0 ${m.cls}`}>
-      <Icon className="h-3 w-3" /> {m.label}
-    </span>
   );
 };
 

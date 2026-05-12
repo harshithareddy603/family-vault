@@ -16,24 +16,22 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
 import { useDocumentsWithCache } from "@/hooks/useDocumentsWithCache";
-import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2, CheckSquare, Share2, Search, FileX, Pencil } from "lucide-react";
+import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2, CheckSquare, Share2, Search, FileX, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentPreviewSheet } from "@/components/DocumentPreviewSheet";
 import { QRShareDialog } from "@/components/QRShareDialog";
 import { EditDocumentDrawer } from "@/components/EditDocumentDrawer";
 import { BulkActionBar } from "@/components/BulkActionBar";
-import { Database } from "@/types/supabase";
+import type { DocumentRow } from "@/services/supabase";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-
-type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired", "⭐ Priority"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, addDocument, deleteDocument, getSignedUrl, isOffline } = useDocumentsWithCache();
+  const { documents, addDocument, deleteDocument, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -95,13 +93,13 @@ const Documents = () => {
       
       let successCount = 0;
       for (const doc of selectedDocs) {
-        if (!doc.file_path) continue;
-        const url = await getSignedUrl(doc.file_path);
+        if (!doc.file_url) continue;
+        const url = await getSignedUrl(doc.file_url);
         if (url) {
           try {
             const response = await fetch(url);
             const blob = await response.blob();
-            const ext = doc.file_path.split('.').pop();
+            const ext = doc.file_url.split('.').pop() || 'pdf';
             zip.file(`${doc.name}.${ext}`, blob);
             successCount++;
           } catch (e) {
@@ -187,19 +185,27 @@ const Documents = () => {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Documents</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All your paperwork in one place.</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage your secure vault</p>
         </div>
-        <Button 
-          variant={selectionMode ? "default" : "outline"} 
-          size="sm" 
-          onClick={() => {
-            setSelectionMode(!selectionMode);
-            if (selectionMode) setSelectedIds(new Set());
-          }}
-        >
-          <CheckSquare className="h-4 w-4 mr-2" />
-          {selectionMode ? "Cancel" : "Select"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {uploadProgress > 0 && (
+            <div className="flex items-center gap-1.5 text-primary font-medium text-xs bg-primary/10 px-2 py-1.5 rounded-full">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {Math.round(uploadProgress)}%
+            </div>
+          )}
+          <Button 
+            variant={selectionMode ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => {
+              setSelectionMode(!selectionMode);
+              if (selectionMode) setSelectedIds(new Set());
+            }}
+          >
+            <CheckSquare className="h-4 w-4 mr-2" />
+            {selectionMode ? "Cancel" : "Select"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-4">
@@ -285,7 +291,7 @@ const Documents = () => {
                       const newSet = new Set(selectedIds);
                       if (isSelected) newSet.delete(d.id); else newSet.add(d.id);
                       setSelectedIds(newSet);
-                    } else if (d.file_path) {
+                    } else if (d.file_url) {
                       setPreviewDoc(d);
                     }
                   }}

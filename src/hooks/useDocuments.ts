@@ -17,6 +17,7 @@ export const useDocuments = () => {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const fetchDocuments = useCallback(async () => {
     if (!user) return;
@@ -38,11 +39,25 @@ export const useDocuments = () => {
   const uploadFile = async (file: File): Promise<string | null> => {
     if (!user) return null;
     const path = `${user.id}/${Date.now()}-${file.name}`;
+    
+    // Simulate upload progress since supabase.storage doesn't expose onProgress natively in JS client
+    setUploadProgress(10);
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => (prev < 90 ? prev + Math.random() * 15 : prev));
+    }, 200);
+
     const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: false });
+    
+    clearInterval(progressInterval);
+    setUploadProgress(100);
+
     if (error) {
       setError(error.message);
+      setUploadProgress(0);
       return null;
     }
+    
+    setTimeout(() => setUploadProgress(0), 500);
     return path;
   };
 
@@ -110,5 +125,6 @@ export const useDocuments = () => {
     updateDocument,
     deleteDocument,
     getSignedUrl,
+    uploadProgress,
   };
 };

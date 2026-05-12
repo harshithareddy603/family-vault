@@ -7,7 +7,7 @@ type AuthCtx = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (input: { email: string; password: string; name: string; phone?: string }) => Promise<{ error: Error | null }>;
+  signUp: (input: { email: string; password: string; name: string; phone?: string; photo: File }) => Promise<{ error: Error | null }>;
   signIn: (input: { email: string; password: string }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
@@ -31,14 +31,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signUp: AuthCtx["signUp"] = useCallback(async ({ email, password, name, phone }) => {
+  const signUp: AuthCtx["signUp"] = useCallback(async ({ email, password, name, phone, photo }) => {
     const redirectTo = `${window.location.origin}/`;
+    
+    // First, upload the photo to the avatars bucket
+    const fileExt = photo.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, photo);
+
+    if (uploadError) {
+      return { error: new Error(`Failed to upload photo: ${uploadError.message}`) };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectTo,
-        data: { name, phone: phone ?? "" },
+        data: { name, phone: phone ?? "", avatar_url: publicUrl },
       },
     });
     return { error: error as Error | null };

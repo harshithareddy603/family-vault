@@ -1,8 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Database } from "@/types/supabase";
+import type { DocumentRow } from "@/services/supabase";
 import { Badge } from "@/components/ui/badge";
-
-type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
 
 interface NotificationsSheetProps {
   documents: DocumentRow[];

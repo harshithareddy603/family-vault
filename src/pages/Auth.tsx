@@ -20,7 +20,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = "Sign in · Smart Docs"; }, []);
@@ -36,7 +36,17 @@ const Auth = () => {
       if (error) toast.error(error.message);
       else { toast.success("Welcome back!"); nav("/dashboard"); }
     } else {
-      const { error } = await signUp({ email, password, name, phone });
+      if (!photo) {
+        toast.error("Profile photo is required.");
+        setBusy(false);
+        return;
+      }
+      if (photo.size > 2 * 1024 * 1024) {
+        toast.error("Profile photo must be less than 2MB.");
+        setBusy(false);
+        return;
+      }
+      const { error } = await signUp({ email, password, name, photo });
       if (error) toast.error(error.message);
       else toast.success("Account created. Check your email to verify (if required).");
     }
@@ -78,8 +88,17 @@ const Auth = () => {
                   <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required={mode === "signup"} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (optional)</Label>
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Label htmlFor="photo">Profile Photo (Max 2MB)</Label>
+                  <Input 
+                    id="photo" 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => setPhoto(e.target.files?.[0] || null)} 
+                    required={mode === "signup"} 
+                  />
+                  {photo && photo.size > 2 * 1024 * 1024 && (
+                    <p className="text-xs text-destructive">File size exceeds 2MB limit.</p>
+                  )}
                 </div>
               </TabsContent>
 

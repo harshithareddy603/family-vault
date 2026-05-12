@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDocuments } from "./useDocuments";
-import { Database } from "@/types/supabase";
-
-type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
+import type { DocumentRow } from "@/services/supabase";
 
 export const useDocumentsWithCache = () => {
   const docsHook = useDocuments();
@@ -50,5 +48,6 @@ export const useDocumentsWithCache = () => {
     ...docsHook,
     documents: activeDocuments,
     isOffline,
+    uploadProgress: docsHook.uploadProgress,
   };
 };
