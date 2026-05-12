@@ -54,9 +54,17 @@ const ProfilePage = () => {
 
       setSaving(true);
       const asset = result.assets[0];
+
+      // Check file size (limit to 3MB)
+      if (asset.fileSize && asset.fileSize > 3 * 1024 * 1024) {
+        Alert.alert("Image Too Large", "Please select an image smaller than 3MB.");
+        setSaving(false);
+        return;
+      }
+
       const fileExt = asset.uri.split('.').pop();
-      const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`; // Upload directly to avatars bucket root
 
       // Convert URI to Blob for upload
       const response = await fetch(asset.uri);
@@ -64,7 +72,10 @@ const ProfilePage = () => {
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob);
+        .upload(filePath, blob, {
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -78,9 +89,13 @@ const ProfilePage = () => {
 
       if (updateError) throw updateError;
 
-      Alert.alert("Success", "Profile picture updated!");
+      // Force refresh the session to show the new avatar
+      await supabase.auth.refreshSession();
+
+      Alert.alert("Success", "Profile picture updated! It may take a moment to reflect everywhere.");
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to update profile picture");
+      console.error("Avatar Update Error:", error);
+      Alert.alert("Error", error.message || "Failed to update profile picture. Ensure the 'avatars' bucket exists in Supabase.");
     } finally {
       setSaving(false);
     }
