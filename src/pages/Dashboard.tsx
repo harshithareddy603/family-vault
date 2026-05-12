@@ -9,35 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard, Loader2 } from "lucide-react";
-
-const getDocumentLogo = (name: string, category: string, source: string | null) => {
-  const n = name.toLowerCase();
-  const c = category.toLowerCase();
-  const s = source?.toLowerCase() || "";
-  
-  if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar") || c === "id") {
-    return <Fingerprint className="h-6 w-6 text-purple-600" />;
-  }
-  if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
-    return <Landmark className="h-6 w-6 text-blue-600" />;
-  }
-  if (n.includes("passport") || c === "passport" || s.includes("passport")) {
-    return <Globe className="h-6 w-6 text-sky-500" />;
-  }
-  if (n.includes("voter") || c === "voter" || s.includes("voter_id")) {
-    return <CreditCard className="h-6 w-6 text-teal-600" />;
-  }
-  if (c === "driving license" || c === "license" || n.includes("license") || s.includes("license")) {
-    return <Car className="h-6 w-6 text-amber-600" />;
-  }
-  
-  if (c === "medical") return <HeartPulse className="h-6 w-6 text-rose-500" />;
-  if (c === "property") return <Building2 className="h-6 w-6 text-indigo-500" />;
-  if (c === "education") return <GraduationCap className="h-6 w-6 text-emerald-500" />;
-  if (c === "insurance") return <Car className="h-6 w-6 text-amber-500" />;
-  
-  return <FileText className="h-6 w-6 text-blue-500" />;
-};
+import { DocumentLogo } from "@/components/DocumentLogo";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -121,8 +93,8 @@ const Dashboard = () => {
                 onClick={() => setPreviewDoc(d)}
                 className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50 cursor-pointer hover:bg-secondary/20 transition-colors"
               >
-                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary/50 rounded-xl overflow-hidden">
-                  {getDocumentLogo(d.name, d.category, d.source)}
+                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white rounded-xl overflow-hidden p-1 shadow-sm border border-border/20">
+                  <DocumentLogo name={d.name} category={d.category} source={d.source} className="h-8 w-8" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate text-foreground">{d.name}</p>
