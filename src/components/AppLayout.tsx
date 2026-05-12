@@ -24,7 +24,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <ShieldCheck className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="font-display text-base font-bold leading-none">Zerra Docs</p>
+              <p className="font-display text-base font-bold leading-none">Smart Docs</p>
               {user?.email && (
                 <p className="text-[11px] text-muted-foreground truncate max-w-[160px] mt-0.5">{user.email}</p>
               )}

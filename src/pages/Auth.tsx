@@ -23,7 +23,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { document.title = "Sign in · Zerra Docs"; }, []);
+  useEffect(() => { document.title = "Sign in · Smart Docs"; }, []);
 
   if (loading) return null;
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
@@ -50,7 +50,7 @@ const Auth = () => {
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-hero shadow-soft mb-4">
             <ShieldCheck className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-3xl font-bold">Zerra Docs</h1>
+          <h1 className="font-display text-3xl font-bold">Smart Docs</h1>
           <p className="text-muted-foreground text-sm mt-1">Your family's documents, safely organized.</p>
         </div>
 
