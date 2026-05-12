@@ -28,7 +28,7 @@ const Dashboard = () => {
         {/* Blue Header Section */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={styles.headerInfo}>
               <Text style={styles.welcomeText}>Welcome,</Text>
               <Text style={styles.userName}>{name}!</Text>
             </View>
@@ -110,8 +110,12 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  headerInfo: {
+    flex: 1,
+    marginRight: 16,
   },
   welcomeText: {
     fontSize: 14,
@@ -121,6 +125,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    flexWrap: 'wrap',
   },
   avatar: {
     width: 48,
