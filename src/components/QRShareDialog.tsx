@@ -21,14 +21,14 @@ export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps)
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (isOpen && document?.file_path) {
+    if (isOpen && document?.file_url) {
       const fetchUrl = async () => {
         setLoading(true);
         setSignedUrl(null);
         try {
           // Ideally 86400s (24 hours), assuming getSignedUrl takes expiry.
           // For now, getSignedUrl has default behavior.
-          const url = await getSignedUrl(document.file_path!, 86400); 
+          const url = await getSignedUrl(document.file_url!, 86400); 
           if (url) {
             setSignedUrl(url);
           } else {

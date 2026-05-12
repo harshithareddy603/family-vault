@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { DocumentPreviewSheet } from "@/components/DocumentPreviewSheet";
+import type { DocumentRow } from "@/services/supabase";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car } from "lucide-react";
+import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard } from "lucide-react";
 
 const getDocumentLogo = (name: string, category: string, source: string | null) => {
   const n = name.toLowerCase();
@@ -14,16 +16,22 @@ const getDocumentLogo = (name: string, category: string, source: string | null) 
   const s = source?.toLowerCase() || "";
   
   if (n.includes("aadhaar") || c.includes("aadhaar") || s.includes("aadhaar")) {
-    return <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/cf/Aadhaar_Logo.svg/1200px-Aadhaar_Logo.svg.png" alt="Aadhaar" className="h-8 w-12 object-contain" />;
+    return <Fingerprint className="h-6 w-6 text-purple-500" />;
   }
   if (n.includes("pan") || c.includes("pan") || s.includes("pan")) {
-    return <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Income_Tax_Department_Logo.png" alt="PAN" className="h-8 w-8 object-contain" />;
+    return <Landmark className="h-6 w-6 text-blue-600" />;
+  }
+  if (n.includes("passport") || c.includes("passport") || s.includes("passport")) {
+    return <Globe className="h-6 w-6 text-sky-500" />;
+  }
+  if (n.includes("voter") || c.includes("voter") || s.includes("voter_id")) {
+    return <CreditCard className="h-6 w-6 text-teal-500" />;
   }
   
   if (c === "medical") return <HeartPulse className="h-6 w-6 text-rose-500" />;
   if (c === "property") return <Building2 className="h-6 w-6 text-indigo-500" />;
   if (c === "education") return <GraduationCap className="h-6 w-6 text-emerald-500" />;
-  if (c === "insurance" || c === "license") return <Car className="h-6 w-6 text-amber-500" />;
+  if (c === "insurance" || c === "license" || s.includes("license")) return <Car className="h-6 w-6 text-amber-500" />;
   
   return <FileText className="h-6 w-6 text-blue-500" />;
 };
@@ -31,6 +39,7 @@ const getDocumentLogo = (name: string, category: string, source: string | null) 
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents } = useDocuments();
+  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
@@ -98,8 +107,12 @@ const Dashboard = () => {
           <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
         ) : (
           <ul className="space-y-2">
-            {filteredDocuments.slice(0, 1).map((d) => (
-              <li key={d.id} className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50">
+            {filteredDocuments.slice(0, 5).map((d) => (
+              <li 
+                key={d.id} 
+                onClick={() => setPreviewDoc(d)}
+                className="flex items-center gap-4 p-4 rounded-2xl bg-card shadow-sm border border-border/50 cursor-pointer hover:bg-secondary/20 transition-colors"
+              >
                 <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary/50 rounded-xl overflow-hidden">
                   {getDocumentLogo(d.name, d.category, d.source)}
                 </div>
@@ -114,6 +127,12 @@ const Dashboard = () => {
           </ul>
         )}
       </Card>
+
+      <DocumentPreviewSheet 
+        document={previewDoc} 
+        isOpen={!!previewDoc} 
+        onClose={() => setPreviewDoc(null)} 
+      />
     </AppLayout>
   );
 };

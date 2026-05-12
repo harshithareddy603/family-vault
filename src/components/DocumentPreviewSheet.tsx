@@ -18,14 +18,14 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && document?.file_path) {
+    if (isOpen && document?.file_url) {
       const fetchUrl = async () => {
         setLoading(true);
         setSignedUrl(null);
         try {
           // getSignedUrl uses 3600 seconds by default or similar.
           // Note: The useDocuments hook already implements getSignedUrl.
-          const url = await getSignedUrl(document.file_path!);
+          const url = await getSignedUrl(document.file_url!);
           if (url) {
             setSignedUrl(url);
           } else {
@@ -43,7 +43,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
 
   if (!document) return null;
 
-  const ext = document.file_path?.split(".").pop()?.toLowerCase();
+  const ext = document.file_url?.split(".").pop()?.toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   const isPdf = ext === "pdf";
 

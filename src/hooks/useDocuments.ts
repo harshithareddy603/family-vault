@@ -90,10 +90,16 @@ export const useDocuments = () => {
           });
           const text = result.data.text.toLowerCase();
           
-          if (text.includes("aadhaar") || text.includes("uidai")) {
+          if (text.includes("aadhaar") || text.includes("uidai") || text.includes("government of india")) {
             detectedSource = "aadhaar";
           } else if (text.includes("pan") || text.includes("income tax")) {
             detectedSource = "pan";
+          } else if (text.includes("passport") || text.includes("republic of india")) {
+            detectedSource = "passport";
+          } else if (text.includes("driving license") || text.includes("transport department")) {
+            detectedSource = "license";
+          } else if (text.includes("election commission") || text.includes("voter id")) {
+            detectedSource = "voter_id";
           }
         } catch (e) {
           console.error("OCR failed:", e);
@@ -103,6 +109,9 @@ export const useDocuments = () => {
         const fname = input.file.name.toLowerCase();
         if (fname.includes("aadhaar")) detectedSource = "aadhaar";
         else if (fname.includes("pan")) detectedSource = "pan";
+        else if (fname.includes("passport")) detectedSource = "passport";
+        else if (fname.includes("license") || fname.includes("dl")) detectedSource = "license";
+        else if (fname.includes("voter")) detectedSource = "voter_id";
       }
 
       file_url = await uploadFile(input.file);
