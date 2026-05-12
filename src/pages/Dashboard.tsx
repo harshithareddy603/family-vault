@@ -4,10 +4,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { useFamily } from "@/hooks/useFamily";
 import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car } from "lucide-react";
 
 const getDocumentLogo = (name: string, category: string) => {
@@ -32,17 +30,12 @@ const getDocumentLogo = (name: string, category: string) => {
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents } = useDocuments();
-  const { members } = useFamily();
-  const [selectedMember, setSelectedMember] = useState<string>("myself");
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
   const filteredDocuments = useMemo(() => {
-    if (selectedMember === "myself") {
-      return documents.filter((d) => d.family_member_id === null);
-    }
-    return documents.filter((d) => d.family_member_id === selectedMember);
-  }, [documents, selectedMember]);
+    return documents.filter((d) => d.family_member_id === null);
+  }, [documents]);
 
   const name = user?.user_metadata?.name || "User";
   const avatarUrl = user?.user_metadata?.avatar_url;
@@ -106,17 +99,7 @@ const Dashboard = () => {
       {/* Document List */}
       <Card className="p-4 shadow-card mb-5 border-none bg-transparent shadow-none">
         <div className="flex items-center justify-between mb-4">
-          <Select value={selectedMember} onValueChange={setSelectedMember}>
-            <SelectTrigger className="w-[180px] bg-card border-none shadow-sm rounded-xl h-9">
-              <SelectValue placeholder="Select Member" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="myself">Myself</SelectItem>
-              {members.map(m => (
-                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <h2 className="font-display text-base font-semibold">My documents</h2>
           <Link to="/documents" className="text-xs text-primary font-medium flex items-center">
             All <ChevronRight className="h-3.5 w-3.5" />
           </Link>
