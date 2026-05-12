@@ -327,7 +327,11 @@ const Documents = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>File</Text>
-                <TouchableOpacity style={styles.filePicker} onPress={pickDocument}>
+                <TouchableOpacity 
+                  style={[styles.filePicker, busy && styles.disabledInput]} 
+                  onPress={pickDocument}
+                  disabled={busy}
+                >
                   <Feather name="file" size={18} color="#64748B" style={{ marginRight: 8 }} />
                   <Text style={styles.filePickerText}>
                     {file ? file.name : "Choose File"}
@@ -347,10 +351,21 @@ const Documents = () => {
                 onPress={submit}
                 disabled={busy}
               >
-                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save document</Text>}
+                {busy ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.saveButtonText}>Uploading...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.saveButtonText}>Save document</Text>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={() => { setOpen(false); reset(); }}>
+              <TouchableOpacity 
+                style={[styles.cancelButton, busy && { opacity: 0.5 }]} 
+                onPress={() => { setOpen(false); reset(); }}
+                disabled={busy}
+              >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </ScrollView>
@@ -744,7 +759,12 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   disabledButton: {
-    opacity: 0.7,
+    backgroundColor: '#94A3B8',
+    opacity: 0.8,
+  },
+  disabledInput: {
+    opacity: 0.5,
+    backgroundColor: '#F1F5F9',
   },
   uploadProgressContainer: {
     marginVertical: 16,

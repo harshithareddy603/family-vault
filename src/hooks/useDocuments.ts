@@ -84,28 +84,51 @@ export const useDocuments = () => {
     
     setUploadProgress(10);
     
-    const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      name: fileName,
-      type: file.type || 'application/octet-stream',
-    } as any);
+    try {
+      let fileToUpload;
+      if (isWeb) {
+        // On web, we can fetch the blob from the uri (which is a blob url or local path)
+        const response = await fetch(file.uri);
+        fileToUpload = await response.blob();
+      } else {
+        // On mobile, we use a similar approach or the uri directly
+        const response = await fetch(file.uri);
+        fileToUpload = await response.blob();
+      }
 
-    const { error } = await supabase.storage.from("documents").upload(path, formData, { upsert: false });
-    
-    setUploadProgress(100);
+      console.log("Starting storage upload to path:", path);
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .upload(path, fileToUpload, { 
+          upsert: true,
+          contentType: file.type || 'application/octet-stream'
+        });
+      
+      setUploadProgress(100);
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        console.error("Storage Upload Error:", error);
+        setError(error.message);
+        setUploadProgress(0);
+        return null;
+      }
+      
+      console.log("Storage upload successful:", data);
+      setTimeout(() => setUploadProgress(0), 500);
+      return path;
+    } catch (err: any) {
+      console.error("File processing error:", err);
+      setError(err.message);
       setUploadProgress(0);
       return null;
     }
-    
-    setTimeout(() => setUploadProgress(0), 500);
-    return path;
   };
 
   const getSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
+    if (!path) {
+      console.warn("getSignedUrl called with null/empty path");
+      return null;
+    }
     // 1. Check local cache first
     let cachedUri = await getFileLocal(path);
     
