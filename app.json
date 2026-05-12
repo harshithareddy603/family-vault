@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Family Vault",
+    "name": "Smart Docs",
     "slug": "family-vault",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./public/logo.png",
+    "icon": "./public/favicon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./public/logo.png",
+      "image": "./public/favicon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4a3aff"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -19,12 +19,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./public/logo.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./public/favicon.png",
+        "backgroundColor": "#4a3aff"
       }
     },
     "web": {
-      "favicon": "./public/favicon.ico"
+      "favicon": "./public/favicon.png"
     }
   }
 }

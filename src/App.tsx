@@ -24,7 +24,11 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider>
-        <NavigationContainer>
+        <NavigationContainer
+          documentTitle={{
+            formatter: (options, route) => `${options?.title ?? route?.name} - Smart Docs`,
+          }}
+        >
           <AuthProvider>
             <Stack.Navigator 
               initialRouteName="Index"
