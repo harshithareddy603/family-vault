@@ -46,8 +46,8 @@ export const useDocuments = () => {
     return path;
   };
 
-  const getSignedUrl = async (path: string) => {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, 60 * 60);
+  const getSignedUrl = async (path: string, expiresIn = 3600) => {
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
     if (error) return null;
     return data.signedUrl;
   };
@@ -59,6 +59,7 @@ export const useDocuments = () => {
     family_member_id?: string | null;
     priority?: boolean;
     file?: File | null;
+    source?: string | null;
   }) => {
     if (!user) return { error: new Error("Not signed in") };
     let file_url: string | null = null;
@@ -75,6 +76,7 @@ export const useDocuments = () => {
       priority: !!input.priority,
       status,
       file_url,
+      source: input.source ?? null,
     });
     if (!error) await fetchDocuments();
     return { error };

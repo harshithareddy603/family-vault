@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/services/supabase";
+import { SplashScreen } from "@/components/SplashScreen";
 
 type AuthCtx = {
   session: Session | null;
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signUp, signIn, signOut }}>
-      {children}
+      {loading ? <SplashScreen /> : children}
     </Ctx.Provider>
   );
 };

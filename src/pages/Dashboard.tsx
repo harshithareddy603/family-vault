@@ -1,15 +1,22 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, CheckCircle2, Clock, ChevronRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ChevronRight, HardDrive, CloudDownload, ShieldCheck } from "lucide-react";
+import { DocumentStats } from "@/components/DocumentStats";
+import { DigiLockerModal } from "@/components/DigiLockerModal";
+import { SurepassImportModal } from "@/components/SurepassImportModal";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { documents } = useDocuments();
+  const [showDigiLocker, setShowDigiLocker] = useState(false);
+  const [showSurepass, setShowSurepass] = useState(false);
 
   useEffect(() => { document.title = "Dashboard · Smart Docs"; }, []);
 
@@ -19,6 +26,37 @@ const Dashboard = () => {
 
   const name = user?.user_metadata?.name;
 
+  const { expiringSoonCount, statusData } = useMemo(() => {
+    let expiringSoonCount = 0;
+    let safeCount = 0;
+    let soonCount = 0;
+    let expiredCount = 0;
+
+    const now = new Date();
+    documents.forEach((d) => {
+      if (d.status === "safe") safeCount++;
+      else if (d.status === "soon") soonCount++;
+      else if (d.status === "expired") expiredCount++;
+
+      if (d.expiry_date && d.status === "soon") {
+        const exp = new Date(d.expiry_date);
+        const days = Math.floor((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (days >= 0 && days <= 7) {
+          expiringSoonCount++;
+        }
+      }
+    });
+
+    return {
+      expiringSoonCount,
+      statusData: [
+        { name: "Safe", value: safeCount, color: "#22c55e" },
+        { name: "Expiring", value: soonCount, color: "#f59e0b" },
+        { name: "Expired", value: expiredCount, color: "#ef4444" },
+      ].filter(item => item.value > 0),
+    };
+  }, [documents]);
+
   return (
     <AppLayout>
       <div className="mb-5">
@@ -26,6 +64,55 @@ const Dashboard = () => {
         <h1 className="font-display text-2xl font-bold leading-tight">
           {name ? `Hi, ${name} 👋` : "Hi there 👋"}
         </h1>
+      </div>
+
+      {expiringSoonCount > 0 && (
+        <Alert variant="destructive" className="mb-6 bg-destructive/10 text-destructive border-none">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Documents Expiring Soon</AlertTitle>
+          <AlertDescription className="mt-1 flex items-center justify-between">
+            <span>{expiringSoonCount} document(s) expire in the next 7 days.</span>
+            <Link to="/documents" className="font-medium hover:underline">View Documents →</Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
+            <HardDrive className="h-10 w-10 text-primary mb-4" />
+            <p className="text-3xl font-display font-bold">{documents.length}</p>
+            <p className="text-sm text-muted-foreground">files stored</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6 h-[200px] flex items-center justify-center">
+            {statusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground">No documents to chart</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent documents */}
@@ -55,7 +142,35 @@ const Dashboard = () => {
             ))}
           </ul>
         )}
+        <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-3">
+          <Button 
+            variant="outline" 
+            className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 text-xs px-2"
+            onClick={() => setShowDigiLocker(true)}
+          >
+            <CloudDownload className="mr-1.5 h-3.5 w-3.5" /> DigiLocker
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 text-xs px-2"
+            onClick={() => setShowSurepass(true)}
+          >
+            <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Verify ID
+          </Button>
+        </div>
       </Card>
+
+      <DocumentStats />
+      
+      <DigiLockerModal 
+        isOpen={showDigiLocker} 
+        onClose={() => setShowDigiLocker(false)} 
+      />
+
+      <SurepassImportModal
+        isOpen={showSurepass}
+        onClose={() => setShowSurepass(false)}
+      />
     </AppLayout>
   );
 };

@@ -11,20 +11,29 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-  DrawerTrigger,
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFamily } from "@/hooks/useFamily";
-import { useDocuments } from "@/hooks/useDocuments";
-import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { useDocumentsWithCache } from "@/hooks/useDocumentsWithCache";
+import { Plus, Trash2, Download, FileText, AlertTriangle, Clock, CheckCircle2, CheckSquare, Share2, Search, FileX, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { DocumentPreviewSheet } from "@/components/DocumentPreviewSheet";
+import { QRShareDialog } from "@/components/QRShareDialog";
+import { EditDocumentDrawer } from "@/components/EditDocumentDrawer";
+import { BulkActionBar } from "@/components/BulkActionBar";
+import { Database } from "@/types/supabase";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+
+type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
 
 const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
+const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired", "⭐ Priority"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, addDocument, deleteDocument, getSignedUrl } = useDocuments();
+  const { documents, addDocument, deleteDocument, getSignedUrl, isOffline } = useDocumentsWithCache();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -34,6 +43,20 @@ const Documents = () => {
   const [priority, setPriority] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
+
+  // Bulk Download States
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+
+  const [shareDoc, setShareDoc] = useState<DocumentRow | null>(null);
+  const [editDoc, setEditDoc] = useState<DocumentRow | null>(null);
+
+  // Search, Filter, Sort States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest_first");
 
   useEffect(() => { document.title = "Documents · Smart Docs"; }, []);
 
@@ -63,28 +86,210 @@ const Documents = () => {
     else toast.error("Could not get file");
   };
 
+  const handleDownloadZip = async () => {
+    if (selectedIds.size === 0) return;
+    setIsDownloadingZip(true);
+    try {
+      const zip = new JSZip();
+      const selectedDocs = documents.filter(d => selectedIds.has(d.id));
+      
+      let successCount = 0;
+      for (const doc of selectedDocs) {
+        if (!doc.file_path) continue;
+        const url = await getSignedUrl(doc.file_path);
+        if (url) {
+          try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const ext = doc.file_path.split('.').pop();
+            zip.file(`${doc.name}.${ext}`, blob);
+            successCount++;
+          } catch (e) {
+            console.error("Failed to fetch blob for", doc.name);
+          }
+        }
+      }
+
+      if (successCount === 0) throw new Error("No files could be downloaded.");
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const date = new Date().toISOString().split("T")[0];
+      saveAs(zipBlob, `SmartDocs_Export_${date}.zip`);
+      toast.success("ZIP downloaded successfully");
+      setSelectionMode(false);
+      setSelectedIds(new Set());
+    } catch (error) {
+      toast.error("Failed to download ZIP");
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
+  // Compute processed documents
+  const processedDocuments = documents
+    .filter((d) => {
+      // 1. Search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const ownerName = d.family_member_id ? members.find((m) => m.id === d.family_member_id)?.name ?? "Family" : "You";
+        const matchesSearch = d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || ownerName.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
+      // 2. Filter
+      if (activeFilter !== "All") {
+        if (activeFilter === "⚠ Expiring Soon") {
+          return d.status === "soon";
+        } else if (activeFilter === "❌ Expired") {
+          return d.status === "expired";
+        } else if (activeFilter === "⭐ Priority") {
+          return d.priority;
+        } else {
+          return d.category === activeFilter;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // 3. Sort
+      if (sortBy === "newest_first") {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (sortBy === "oldest_first") {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      if (sortBy === "name_az") {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === "name_za") {
+        return b.name.localeCompare(a.name);
+      }
+      if (sortBy === "expiry_soonest") {
+        if (!a.expiry_date) return 1;
+        if (!b.expiry_date) return -1;
+        return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
+      }
+      if (sortBy === "priority_first") {
+        if (a.priority === b.priority) {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        return a.priority ? -1 : 1;
+      }
+      return 0;
+    });
+
   return (
     <AppLayout>
-      <div className="mb-5">
-        <h1 className="font-display text-2xl font-bold">Documents</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">All your paperwork in one place.</p>
+      {isOffline && (
+        <div className="bg-yellow-500/10 text-yellow-600 p-2 mb-4 rounded-md text-xs text-center border border-yellow-500/20">
+          You are viewing cached offline data.
+        </div>
+      )}
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Documents</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">All your paperwork in one place.</p>
+        </div>
+        <Button 
+          variant={selectionMode ? "default" : "outline"} 
+          size="sm" 
+          onClick={() => {
+            setSelectionMode(!selectionMode);
+            if (selectionMode) setSelectedIds(new Set());
+          }}
+        >
+          <CheckSquare className="h-4 w-4 mr-2" />
+          {selectionMode ? "Cancel" : "Select"}
+        </Button>
       </div>
 
-      {documents.length === 0 ? (
+      <div className="flex items-center gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search documents..." 
+            className="pl-9 h-10" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[140px] h-10">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest_first">Newest First</SelectItem>
+            <SelectItem value="oldest_first">Oldest First</SelectItem>
+            <SelectItem value="name_az">Name A-Z</SelectItem>
+            <SelectItem value="name_za">Name Z-A</SelectItem>
+            <SelectItem value="expiry_soonest">Expiry Soonest</SelectItem>
+            <SelectItem value="priority_first">Priority First</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-none">
+        {FILTER_CHIPS.map(chip => (
+          <button
+            key={chip}
+            onClick={() => setActiveFilter(chip)}
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-sm transition-colors ${
+              activeFilter === chip 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      {documents.length === 0 && !searchQuery && activeFilter === "All" ? (
         <Card className="p-10 text-center shadow-card">
           <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">No documents yet.</p>
           <p className="text-xs text-muted-foreground mt-1">Tap the + button to upload your first.</p>
         </Card>
+      ) : processedDocuments.length === 0 ? (
+        <div className="text-center py-12">
+          <FileX className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground font-medium">No documents found</p>
+        </div>
       ) : (
-        <ul className="space-y-3">
-          {documents.map((d) => {
+        <ul className="space-y-3 pb-24">
+          {processedDocuments.map((d) => {
             const ownerName = d.family_member_id
               ? members.find((m) => m.id === d.family_member_id)?.name ?? "Family"
               : "You";
+            const isSelected = selectedIds.has(d.id);
             return (
-              <Card key={d.id} className="p-4 shadow-card">
-                <div className="flex items-start justify-between gap-3">
+              <Card 
+                key={d.id} 
+                className={`p-4 shadow-card overflow-hidden transition-colors relative ${isSelected ? 'border-primary bg-primary/5' : 'hover:bg-secondary/20'}`}
+              >
+                {selectionMode && (
+                  <div className="absolute top-4 left-4 z-10">
+                    <Checkbox 
+                      checked={isSelected}
+                      onCheckedChange={(checked) => {
+                        const newSet = new Set(selectedIds);
+                        if (checked) newSet.add(d.id); else newSet.delete(d.id);
+                        setSelectedIds(newSet);
+                      }}
+                    />
+                  </div>
+                )}
+                <div 
+                  className={`flex items-start justify-between gap-3 cursor-pointer ${selectionMode ? 'pl-8' : ''}`}
+                  onClick={() => {
+                    if (selectionMode) {
+                      const newSet = new Set(selectedIds);
+                      if (isSelected) newSet.delete(d.id); else newSet.add(d.id);
+                      setSelectedIds(newSet);
+                    } else if (d.file_path) {
+                      setPreviewDoc(d);
+                    }
+                  }}
+                >
                   <div className="flex items-start gap-3 min-w-0 flex-1">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                       <FileText className="h-5 w-5" />
@@ -113,6 +318,20 @@ const Documents = () => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => setShareDoc(d)}
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditDoc(d)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-danger"
                     onClick={async () => {
                       const { error } = await deleteDocument(d.id);
@@ -128,18 +347,31 @@ const Documents = () => {
         </ul>
       )}
 
+      {selectionMode && selectedIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          totalCount={processedDocuments.length}
+          onSelectAll={() => setSelectedIds(new Set(processedDocuments.map(d => d.id)))}
+          onDeselectAll={() => setSelectedIds(new Set())}
+          onDownload={handleDownloadZip}
+          isDownloading={isDownloadingZip}
+        />
+      )}
+
       {/* Floating action button */}
-      <Button
-        aria-label="Upload document"
-        className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
-        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-        onClick={(e) => {
-          e.currentTarget.blur();
-          setOpen(true);
-        }}
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+      {!selectionMode && (
+        <Button
+          aria-label="Upload document"
+          className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-gradient-hero shadow-soft p-0"
+          style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+          onClick={(e) => {
+            e.currentTarget.blur();
+            setOpen(true);
+          }}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      )}
 
       <Drawer open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
         <DrawerContent>
@@ -193,6 +425,24 @@ const Documents = () => {
           </form>
         </DrawerContent>
       </Drawer>
+
+      <DocumentPreviewSheet 
+        document={previewDoc} 
+        isOpen={!!previewDoc} 
+        onClose={() => setPreviewDoc(null)} 
+      />
+
+      <QRShareDialog
+        document={shareDoc}
+        isOpen={!!shareDoc}
+        onClose={() => setShareDoc(null)}
+      />
+
+      <EditDocumentDrawer
+        document={editDoc}
+        isOpen={!!editDoc}
+        onClose={() => setEditDoc(null)}
+      />
     </AppLayout>
   );
 };
