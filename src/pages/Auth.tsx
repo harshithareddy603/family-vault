@@ -169,13 +169,19 @@ const Auth = () => {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Password (6 digits)</Text>
               <TextInput 
                 style={styles.input}
                 value={password}
-                onChangeText={setPassword}
-                placeholder="Enter password"
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (mode === "login" && text.length === 6) {
+                    setTimeout(() => handleSubmit(), 100);
+                  }
+                }}
+                placeholder="Enter 6-digit password"
                 secureTextEntry
+                maxLength={6}
               />
             </View>
 
