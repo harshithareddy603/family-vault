@@ -62,8 +62,13 @@ const ProfilePage = () => {
         return;
       }
 
-      const fileExt = asset.uri.split('.').pop()?.split('?')[0] || 'jpg';
-      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      // Fix for web: some browsers return base64 instead of a file extension
+      let extension = asset.uri.split('.').pop()?.split('?')[0].split('#')[0] || 'jpg';
+      if (extension.length > 5 || extension.includes(';')) {
+        extension = 'jpg'; // Fallback for base64 data URIs
+      }
+      
+      const fileName = `${user?.id}-${Date.now()}.${extension}`;
       const filePath = fileName;
 
       let fileToUpload;
