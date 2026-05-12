@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard } from "lucide-react";
+import { AlertTriangle, Clock, ChevronRight, FileText, HeartPulse, Building2, GraduationCap, Car, Fingerprint, Landmark, Globe, CreditCard, Loader2 } from "lucide-react";
 
 const getDocumentLogo = (name: string, category: string, source: string | null) => {
   const n = name.toLowerCase();
@@ -103,7 +103,12 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-base font-semibold">My documents</h2>
         </div>
-        {filteredDocuments.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Loading documents...</p>
+          </div>
+        ) : filteredDocuments.length === 0 ? (
           <EmptyHint text="No documents yet." cta="Add document" to="/documents" />
         ) : (
           <ul className="space-y-2">

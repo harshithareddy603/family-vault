@@ -284,7 +284,12 @@ const Documents = () => {
         ))}
       </div>
 
-      {documents.length === 0 && !searchQuery && activeFilter === "All" ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground mb-4" />
+          <p className="text-sm text-muted-foreground">Loading documents...</p>
+        </div>
+      ) : documents.length === 0 && !searchQuery && activeFilter === "All" ? (
         <Card className="p-10 text-center shadow-card">
           <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">No documents yet.</p>

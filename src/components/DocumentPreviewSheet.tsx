@@ -92,7 +92,9 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center p-6">
-            <p className="text-muted-foreground">Failed to load preview URL.</p>
+            <p className="text-muted-foreground">
+              {document?.file_url ? "Failed to load preview URL." : "No file attached to this document."}
+            </p>
           </div>
         )}
       </SheetContent>
