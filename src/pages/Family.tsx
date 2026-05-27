@@ -1,189 +1,283 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert } from 'react-native'
-import React, { useEffect, useState } from "react";
-import { AppLayout } from "../components/AppLayout";
-import { useFamily } from "../hooks/useFamily";
-import { useDocuments } from "../hooks/useDocuments";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Modal,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from 'react-native';
+import React, { useState } from 'react';
+import { AppLayout } from '../components/AppLayout';
+import { useFamily } from '../hooks/useFamily';
+import { useDocuments } from '../hooks/useDocuments';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigation } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Checkbox } from 'react-native-paper';
 
-const RELATIONS = ["Father", "Mother", "Spouse", "Son", "Daughter", "Brother", "Sister", "Other"];
-
 const Family = () => {
-  const { members, addMember, updateMember, deleteMember } = useFamily();
+  const { user } = useAuth();
+  const { members, loading, addMember, updateMember, deleteMember } = useFamily();
   const { documents } = useDocuments();
+  const navigation = useNavigation<any>();
+
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
-  const reset = () => { setName(""); setEditingId(null); setTermsAccepted(false); };
+  const isWeb = Platform.OS === 'web';
+
+  const reset = () => {
+    setName('');
+    setEditingId(null);
+    setTermsAccepted(false);
+  };
 
   const submit = async () => {
     if (!termsAccepted) {
-      Alert.alert("Error", "Please accept the terms to continue.");
+      if (isWeb) alert('Please accept the terms to continue.');
+      else Alert.alert('Error', 'Please accept the terms to continue.');
       return;
     }
     const payload = { name };
     const { error } = editingId
       ? await updateMember(editingId, payload)
       : await addMember(payload);
-    if (error) Alert.alert("Error", error.message);
-    else { 
-      Alert.alert("Success", editingId ? "Member updated" : "Member added"); 
-      setOpen(false); 
-      reset(); 
+
+    if (error) {
+      if (isWeb) alert(error.message);
+      else Alert.alert('Error', error.message);
+    } else {
+      if (isWeb) alert(editingId ? 'Member updated successfully' : 'Member added successfully');
+      else Alert.alert('Success', editingId ? 'Member updated' : 'Member added');
+      setOpen(false);
+      reset();
     }
   };
 
-  const startEdit = (id: string) => {
-    const m = members.find((x) => x.id === id);
-    if (!m) return;
-    setEditingId(id); setName(m.name);
+  const startEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setName(currentName);
     setTermsAccepted(true);
     setOpen(true);
   };
 
+  const handleDelete = (id: string, name: string) => {
+    if (isWeb) {
+      if (window.confirm(`Are you sure you want to remove ${name}?`)) {
+        deleteMember(id);
+      }
+    } else {
+      Alert.alert('Remove Member', `Are you sure you want to remove ${name}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => deleteMember(id) },
+      ]);
+    }
+  };
+
+  // Get current user details for the Owner card
+  const ownerName = (user?.user_metadata?.name as string | undefined) || 'Harshitha Reddy';
+  const ownerEmail = user?.email || 'harshitha.reddy@example.com';
+  const ownerInitials = ownerName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const ownerDocsCount = documents.filter((d) => !d.family_member_id).length;
+
   return (
     <AppLayout>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Family Doc's</Text>
-          <Text style={styles.subtitle}>Manage your loved ones.</Text>
+      <View style={s.container}>
+        {/* Header Row */}
+        <View style={s.headerRow}>
+          <View>
+            <Text style={s.pageTitle}>Family Management</Text>
+            <Text style={s.subtitle}>{members.length + 1} family members</Text>
+          </View>
+          <TouchableOpacity style={s.addBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
+            <Feather name="plus" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <Text style={s.addBtnText}>Add Member</Text>
+          </TouchableOpacity>
         </View>
 
-        {members.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Feather name="users" size={48} color="#CBD5E1" />
-            <Text style={styles.emptyText}>No family members yet.</Text>
-            <Text style={styles.emptySubtext}>Tap the + button to add one.</Text>
-          </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 40 }} />
         ) : (
-          <ScrollView contentContainerStyle={styles.list}>
+          <View style={s.grid}>
+            {/* 1. Owner Card */}
+            <View style={s.card}>
+              {/* Role Pill */}
+              <View style={[s.pill, s.ownerPill]}>
+                <Text style={s.ownerPillText}>owner</Text>
+              </View>
+
+              <View style={s.cardContent}>
+                {/* Avatar */}
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>{ownerInitials}</Text>
+                </View>
+
+                {/* Details */}
+                <Text style={s.memberName} numberOfLines={1}>
+                  {ownerName}
+                </Text>
+                <Text style={s.memberEmail} numberOfLines={1}>
+                  {ownerEmail}
+                </Text>
+
+                {/* Docs Count */}
+                <View style={s.bottomRow}>
+                  <Text style={s.docsCount}>{ownerDocsCount} documents</Text>
+                  <TouchableOpacity onPress={() => navigation?.navigate('Profile' as any)}>
+                    <Text style={s.linkText}>View Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* 2. Family Members Cards */}
             {members.map((m) => {
-              const docs = documents.filter((d) => d.family_member_id === m.id);
-              const alerts = docs.filter((d) => d.status !== "safe").length;
+              const initials = m.name
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+
+              const email = `${m.name.toLowerCase().replace(/\s+/g, '')}@example.com`;
+              const mDocs = documents.filter((d) => d.family_member_id === m.id);
+
               return (
-                <View key={m.id} style={styles.card}>
-                  <View style={styles.cardRow}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+                <View key={m.id} style={s.card}>
+                  {/* Role Pill & Action Menu */}
+                  <View style={s.cardTopBar}>
+                    <View style={[s.pill, s.familyPill]}>
+                      <Text style={s.familyPillText}>family</Text>
                     </View>
-                    <View style={styles.memberInfo}>
-                      <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
-                      <View style={styles.memberStats}>
-                        <Text style={styles.statsText}>{docs.length} docs</Text>
-                        {alerts > 0 && (
-                          <Text style={styles.alertText}>{alerts} alert{alerts > 1 ? "s" : ""}</Text>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.actionColumn}>
-                      <TouchableOpacity style={styles.iconButton} onPress={() => startEdit(m.id)}>
-                        <Feather name="edit-2" size={16} color="#64748B" />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.iconButton} 
-                        onPress={() => {
-                          Alert.alert(
-                            "Remove Member",
-                            "Are you sure?",
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              { text: "Remove", style: "destructive", onPress: () => deleteMember(m.id) }
-                            ]
-                          );
-                        }}
+                    <View style={s.actions}>
+                      <TouchableOpacity
+                        onPress={() => startEdit(m.id, m.name)}
+                        style={s.miniBtn}
                       >
-                        <Feather name="trash-2" size={16} color="#EF4444" />
+                        <Feather name="edit-2" size={12} color="#64748B" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDelete(m.id, m.name)}
+                        style={s.miniBtn}
+                      >
+                        <Feather name="trash-2" size={12} color="#EF4444" />
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => setViewingId(m.id)}>
-                    <Text style={styles.viewDetailsText}>View Details</Text>
-                    <Feather name="chevron-right" size={14} color="#3b82f6" />
-                  </TouchableOpacity>
+
+                  <View style={s.cardContent}>
+                    {/* Avatar */}
+                    <View style={s.avatar}>
+                      <Text style={s.avatarText}>{initials}</Text>
+                    </View>
+
+                    {/* Details */}
+                    <Text style={s.memberName} numberOfLines={1}>
+                      {m.name}
+                    </Text>
+                    <Text style={s.memberEmail} numberOfLines={1}>
+                      {email}
+                    </Text>
+
+                    {/* Docs Count */}
+                    <View style={s.bottomRow}>
+                      <Text style={s.docsCount}>{mDocs.length} documents</Text>
+                      <TouchableOpacity onPress={() => setViewingId(m.id)}>
+                        <Text style={s.linkText}>View Profile</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
               );
             })}
-          </ScrollView>
+          </View>
         )}
       </View>
 
-      <TouchableOpacity style={styles.fab} onPress={() => setOpen(true)}>
-        <Feather name="plus" size={24} color="#FFF" />
-      </TouchableOpacity>
-
       {/* Add/Edit Modal */}
-      <Modal visible={open} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{editingId ? "Edit Member" : "Add Family Member"}</Text>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput 
-                style={styles.input}
+      <Modal visible={open} animationType="slide" transparent={true} onRequestClose={() => setOpen(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <Text style={s.modalTitle}>{editingId ? 'Edit Family Member' : 'Add Family Member'}</Text>
+            <View style={s.inputGroup}>
+              <Text style={s.label}>Full Name</Text>
+              <TextInput
+                style={s.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter name"
+                placeholder="Enter full name"
+                placeholderTextColor="#94A3B8"
               />
             </View>
-            <View style={styles.termsContainer}>
+            <View style={s.termsContainer}>
               <Checkbox.Android
                 status={termsAccepted ? 'checked' : 'unchecked'}
                 onPress={() => setTermsAccepted(!termsAccepted)}
-                color="#3b82f6"
+                color="#3B82F6"
               />
-              <Text style={styles.termsText}>
+              <Text style={s.termsText}>
                 Please try to save correct details for accessing the files easily.
               </Text>
             </View>
-            <TouchableOpacity 
-              style={[styles.saveButton, !termsAccepted && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[s.saveButton, !termsAccepted && s.disabledButton]}
               onPress={submit}
               disabled={!termsAccepted}
             >
-              <Text style={styles.saveButtonText}>{editingId ? "Save Changes" : "Add Member"}</Text>
+              <Text style={s.saveButtonText}>{editingId ? 'Save Changes' : 'Add Member'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={() => { setOpen(false); reset(); }}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+            <TouchableOpacity style={s.cancelButton} onPress={() => { setOpen(false); reset(); }}>
+              <Text style={s.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* View Details Modal */}
-      <Modal visible={!!viewingId} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+      {/* Detail Viewer Modal */}
+      <Modal visible={!!viewingId} animationType="slide" transparent={true} onRequestClose={() => setViewingId(null)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
             {(() => {
-              const m = members.find(x => x.id === viewingId);
-              const mDocs = documents.filter(d => d.family_member_id === viewingId);
+              const m = members.find((x) => x.id === viewingId);
+              const mDocs = documents.filter((d) => d.family_member_id === viewingId);
               return (
                 <View>
-                  <Text style={styles.modalTitle}>{m?.name}'s Details</Text>
-                  <ScrollView style={styles.detailsList}>
-                    <Text style={styles.detailsSectionTitle}>Documents ({mDocs.length})</Text>
+                  <Text style={s.modalTitle}>{m?.name}'s Documents</Text>
+                  <ScrollView style={s.detailsList} showsVerticalScrollIndicator={false}>
                     {mDocs.length === 0 ? (
-                      <View style={styles.emptyDocs}>
-                        <Text style={styles.emptyDocsText}>No documents added yet.</Text>
+                      <View style={s.emptyDocs}>
+                        <Text style={s.emptyDocsText}>No documents added yet.</Text>
                       </View>
                     ) : (
-                      mDocs.map(d => (
-                        <View key={d.id} style={styles.docItem}>
-                          <View style={styles.docIcon}>
-                            <Feather name="file-text" size={16} color="#3b82f6" />
+                      mDocs.map((d) => (
+                        <View key={d.id} style={s.docItem}>
+                          <View style={s.docIcon}>
+                            <Feather name="file-text" size={15} color="#3B82F6" />
                           </View>
-                          <View style={styles.docContent}>
-                            <Text style={styles.docName} numberOfLines={1}>{d.name}</Text>
-                            <Text style={styles.docCategory}>{d.category}</Text>
+                          <View style={s.docInfo}>
+                            <Text style={s.docName} numberOfLines={1}>{d.name}</Text>
+                            <Text style={s.docCategory}>{d.category}</Text>
                           </View>
                         </View>
                       ))
                     )}
                   </ScrollView>
-                  <TouchableOpacity style={styles.closeBtn} onPress={() => setViewingId(null)}>
-                    <Text style={styles.closeBtnText}>Close</Text>
+                  <TouchableOpacity style={s.closeBtn} onPress={() => setViewingId(null)}>
+                    <Text style={s.closeBtnText}>Close</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -195,166 +289,182 @@ const Family = () => {
   );
 };
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 0,
   },
-  header: {
-    marginBottom: 20,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
   },
-  title: {
+  pageTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#0F172A',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#64748B',
+    marginTop: 2,
   },
-  emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 40,
+  addBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  emptyText: {
-    fontSize: 16,
+  addBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#64748B',
-    marginTop: 16,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
-  },
-  list: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingBottom: 100,
+    gap: 16,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 0,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+    width: Platform.OS === 'web' ? '31.5%' : '100%',
+    minWidth: 260,
+    padding: 20,
+    position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
-    width: Platform.OS === 'web' ? '48.5%' : '100%',
-    minWidth: 280,
   },
-  cardRow: {
+  cardTopBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+  },
+  pill: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  ownerPill: {
+    backgroundColor: '#F3E8FF',
+  },
+  ownerPillText: {
+    color: '#7C3AED',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  familyPill: {
+    backgroundColor: '#EFF6FF',
+    position: 'relative',
+  },
+  familyPillText: {
+    color: '#3B82F6',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  miniBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  cardContent: {
+    alignItems: 'flex-start',
+    marginTop: 16,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
   },
   avatarText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  memberInfo: {
-    flex: 1,
-    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '700',
   },
   memberName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#0F172A',
+    marginBottom: 2,
   },
-  memberStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  statsText: {
-    fontSize: 12,
+  memberEmail: {
+    fontSize: 12.5,
     color: '#64748B',
-    marginRight: 12,
+    marginBottom: 16,
   },
-  alertText: {
-    fontSize: 12,
-    color: '#F59E0B',
-    fontWeight: '600',
-  },
-  actionColumn: {
-    gap: 8,
-  },
-  iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewDetailsBtn: {
+  bottomRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 12,
-    paddingTop: 12,
+    width: '100%',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    paddingTop: 12,
   },
-  viewDetailsText: {
-    fontSize: 13,
-    color: '#3b82f6',
+  docsCount: {
+    fontSize: 12.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  linkText: {
+    fontSize: 12.5,
+    color: '#3B82F6',
     fontWeight: '600',
-    marginRight: 4,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
+
+  // Modal styling
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderRadius: Platform.OS === 'web' ? 24 : 0,
+    borderRadius: 16,
     padding: 24,
-    maxHeight: '80%',
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#0F172A',
     marginBottom: 20,
   },
@@ -362,80 +472,77 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748B',
-    marginBottom: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
   termsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-    paddingRight: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+    marginRight: 20,
   },
   termsText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#64748B',
-    marginLeft: 8,
-    lineHeight: 18,
+    marginLeft: 6,
+    lineHeight: 16,
   },
   saveButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
+    marginBottom: 8,
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 13.5,
     fontWeight: '600',
-  },
-  cancelButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#64748B',
   },
   disabledButton: {
     opacity: 0.5,
   },
-  detailsList: {
-    maxHeight: 400,
+  cancelButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
   },
-  detailsSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
+  cancelButtonText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  // Detail viewer list
+  detailsList: {
+    maxHeight: 280,
     marginBottom: 12,
   },
   emptyDocs: {
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
+    paddingVertical: 32,
     alignItems: 'center',
   },
   emptyDocsText: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 13,
+    color: '#94A3B8',
   },
   docItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    borderRadius: 10,
     marginBottom: 8,
   },
   docIcon: {
@@ -445,30 +552,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
-  docContent: {
+  docInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   docName: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '600',
     color: '#0F172A',
   },
   docCategory: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748B',
     marginTop: 2,
   },
   closeBtn: {
-    marginTop: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    paddingTop: 14,
+    alignItems: 'center',
   },
   closeBtnText: {
-    color: '#3b82f6',
+    fontSize: 13.5,
+    color: '#3B82F6',
     fontWeight: '600',
   },
 });

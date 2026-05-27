@@ -67,7 +67,7 @@ const SheetDescription = ({ children, style }: { children: React.ReactNode; styl
 );
 
 const SheetFooter = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
-  <View style={[styles.footer, style]}>{children}</Text>
+  <View style={[styles.footer, style]}>{children}</View>
 );
 
 const styles = StyleSheet.create({

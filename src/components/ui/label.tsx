@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Text, StyleSheet, TextStyle } from "react-native";
 
-const Label = ({ children, style }: { children: React.ReactNode; style?: TextStyle }) => {
+const Label = ({ children, style }: { children: React.ReactNode; style?: any }) => {
   return (
     <Text style={[styles.label, style]}>
       {children}

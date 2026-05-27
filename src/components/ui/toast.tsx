@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
 
 const ToastProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const ToastViewport = ({ children }: { children: React.ReactNode }) => (
+const ToastViewport = ({ children }: { children?: React.ReactNode }) => (
   <View style={styles.viewport}>{children}</View>
 );
 

@@ -1,99 +1,182 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, SafeAreaView, Platform } from 'react-native'
-import React, { ReactNode, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { useDocuments } from "../hooks/useDocuments";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  Platform,
+} from 'react-native';
+import React, { ReactNode, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { useDocuments } from '../hooks/useDocuments';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-const links = [
-  { to: "Dashboard", label: "Home", icon: "home-outline" as const },
-  { to: "Documents", label: "Docs", icon: "file-document-outline" as const },
-  { to: "Family", label: "Family", icon: "account-group-outline" as const },
-  { to: "Profile", label: "Profile", icon: "account-outline" as const },
+// ─── Navigation config ──────────────────────────────────────────────────────
+
+const WEB_NAV = [
+  { key: 'Dashboard',     label: 'Dashboard', icon: 'home-outline'            as const, sub: false },
+  { key: 'Documents',     label: 'Documents', icon: 'file-document-outline'   as const, sub: true  },
+  { key: 'Search',        label: 'Search',    icon: 'magnify'                 as const, sub: false },
+  { key: 'Notifications', label: 'Alerts',    icon: 'bell-outline'            as const, sub: false },
+  { key: 'Family',        label: 'Family',    icon: 'account-group-outline'   as const, sub: false },
+  { key: 'Analytics',     label: 'Analytics', icon: 'chart-bar'               as const, sub: false },
 ];
+
+const FOOTER_NAV = [
+  { key: 'Settings', label: 'Settings', icon: 'cog-outline'         as const },
+  { key: 'Help',     label: 'Help',     icon: 'help-circle-outline'  as const },
+];
+
+const DOC_SUBS = [
+  { label: 'All Documents', color: '#1E293B' },
+  { label: 'Upload',        color: '#10B981' },
+  { label: 'IDs',           color: '#3B82F6' },
+  { label: 'Certificates',  color: '#8B5CF6' },
+  { label: 'Insurance',     color: '#F97316' },
+  { label: 'Medical',       color: '#EF4444' },
+  { label: 'Licenses',      color: '#06B6D4' },
+  { label: 'Resumes',       color: '#6366F1' },
+  { label: 'Archive',       color: '#94A3B8' },
+];
+
+const MOBILE_NAV = [
+  { to: 'Dashboard', label: 'Home',    icon: 'home-outline'          as const },
+  { to: 'Documents', label: 'Docs',    icon: 'file-document-outline' as const },
+  { to: 'Family',    label: 'Family',  icon: 'account-group-outline' as const },
+  { to: 'Profile',   label: 'Profile', icon: 'account-outline'       as const },
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { user, signOut } = useAuth();
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
   const route = useRoute();
+  const [docsExpanded, setDocsExpanded] = useState(
+    route.name === 'Documents',
+  );
 
-  const notificationsCount = documents.filter((d) => {
+  const alertCount = documents.filter((d) => {
     if (!d.expiry_date) return false;
-    const days = Math.floor((new Date(d.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    return days >= 0 && days <= 7;
+    const days = Math.floor(
+      (new Date(d.expiry_date).getTime() - Date.now()) / 86_400_000,
+    );
+    return days >= 0 && days <= 60;
   }).length;
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.responsiveWrapper}>
-        {/* Compact mobile top bar */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
+  const fullName =
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split('@')[0] ||
+    'User';
+  const initials = fullName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  // ── Web sidebar layout ───────────────────────────────────────────────────
+  if (Platform.OS === 'web') {
+    return (
+      <View style={ws.root}>
+        {/* ── Sidebar ── */}
+        <View style={ws.sidebar}>
+          {/* Logo */}
+          <TouchableOpacity
+            style={ws.logoRow}
+            onPress={() => navigation.navigate('Dashboard')}
+          >
+            <View style={ws.logoBox}>
+              <MaterialCommunityIcons
+                name="file-document-outline"
+                size={18}
+                color="#fff"
+              />
             </View>
-            <View style={styles.logoTextContainer}>
-              <Text style={styles.logoTitle}>Smart Docs</Text>
-              {user?.email && (
-                <Text style={styles.logoSubtitle} numberOfLines={1}>{user.email}</Text>
-              )}
-            </View>
+            <Text style={ws.logoText}>SmartDocs</Text>
           </TouchableOpacity>
 
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate("Notifications")}
-            >
-              <Feather name="bell" size={20} color="#374151" />
-              {notificationsCount > 0 && (
-                <View style={styles.notificationDot} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={async () => { await signOut(); navigation.navigate("Auth"); }}
-            >
-              <Feather name="log-out" size={20} color="#374151" />
-            </TouchableOpacity>
-          </View>
-        </View>
+          {/* Nav items */}
+          <ScrollView style={ws.navScroll} showsVerticalScrollIndicator={false}>
+            {WEB_NAV.map((item) => {
+              const isActive =
+                route.name === item.key ||
+                (item.key === 'Documents' && docsExpanded && route.name === 'Documents');
+              return (
+                <View key={item.key}>
+                  <TouchableOpacity
+                    style={[ws.navItem, isActive && ws.navItemActive]}
+                    onPress={() => {
+                      if (item.sub) {
+                        setDocsExpanded((v) => !v);
+                        navigation.navigate('Documents');
+                      } else {
+                        navigation.navigate(item.key);
+                      }
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={item.icon}
+                      size={17}
+                      color={isActive ? '#3B82F6' : '#64748B'}
+                    />
+                    <Text
+                      style={[ws.navLabel, isActive && ws.navLabelActive]}
+                    >
+                      {item.label}
+                    </Text>
+                    {item.sub && (
+                      <MaterialCommunityIcons
+                        name={docsExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={14}
+                        color="#94A3B8"
+                      />
+                    )}
+                  </TouchableOpacity>
 
-        {/* Main content */}
-        <ScrollView contentContainerStyle={styles.mainContent}>
-          <View style={styles.contentWrapper}>
-            {children}
-          </View>
-        </ScrollView>
+                  {/* Document sub-items */}
+                  {item.sub && docsExpanded && (
+                    <View style={ws.subList}>
+                      {DOC_SUBS.map((sub) => (
+                        <TouchableOpacity
+                          key={sub.label}
+                          style={ws.subItem}
+                          onPress={() => navigation.navigate('Documents')}
+                        >
+                          <Text style={[ws.subText, { color: sub.color }]}>
+                            {sub.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </ScrollView>
 
-        {/* Bottom tab navigation */}
-        <View style={styles.bottomNav}>
-          <View style={styles.navGrid}>
-            {links.map((l) => {
-              const isActive = route.name === l.to;
+          {/* Footer nav */}
+          <View style={ws.sidebarFooter}>
+            {FOOTER_NAV.map((item) => {
+              const isActive = route.name === item.key;
               return (
                 <TouchableOpacity
-                  key={l.to}
-                  onPress={() => navigation.navigate(l.to)}
-                  style={styles.navItem}
+                  key={item.key}
+                  style={[ws.navItem, isActive && ws.navItemActive]}
+                  onPress={() => navigation.navigate(item.key)}
                 >
-                  <View style={[styles.navIconContainer, isActive && styles.navIconActive]}>
-                    <MaterialCommunityIcons 
-                      name={l.icon as any} 
-                      size={20} 
-                      color={isActive ? "#3b82f6" : "#6b7280"} 
-                    />
-                    {l.label === "Docs" && notificationsCount > 0 && (
-                      <View style={styles.navBadge}>
-                        <Text style={styles.navBadgeText}>
-                          {notificationsCount > 9 ? '9+' : notificationsCount}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                    {l.label}
+                  <MaterialCommunityIcons
+                    name={item.icon}
+                    size={17}
+                    color={isActive ? '#3B82F6' : '#64748B'}
+                  />
+                  <Text
+                    style={[ws.navLabel, isActive && ws.navLabelActive]}
+                  >
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               );
@@ -101,31 +184,284 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </View>
         </View>
 
+        {/* ── Main area ── */}
+        <View style={ws.main}>
+          {/* Top header */}
+          <View style={ws.header}>
+            <View style={{ flex: 1 }} />
+            <View style={ws.headerRight}>
+              {/* Search icon */}
+              <TouchableOpacity
+                style={ws.iconBtn}
+                onPress={() => navigation.navigate('Search')}
+              >
+                <Feather name="search" size={17} color="#64748B" />
+              </TouchableOpacity>
+
+              {/* Bell icon */}
+              <TouchableOpacity
+                style={ws.iconBtn}
+                onPress={() => navigation.navigate('Notifications')}
+              >
+                <Feather name="bell" size={17} color="#64748B" />
+                {alertCount > 0 && (
+                  <View style={ws.badge}>
+                    <Text style={ws.badgeText}>
+                      {alertCount > 9 ? '9+' : alertCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* User chip */}
+              <TouchableOpacity
+                style={ws.userChip}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <View style={ws.avatar}>
+                  <Text style={ws.avatarText}>{initials}</Text>
+                </View>
+                <Text style={ws.userName} numberOfLines={1}>
+                  {fullName}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Page content */}
+          <ScrollView
+            style={ws.scrollArea}
+            contentContainerStyle={ws.pageContent}
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Mobile layout ────────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={ms.safe}>
+      <View style={ms.wrapper}>
+        {/* Mobile header */}
+        <View style={ms.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Dashboard')}
+            style={ms.logoRow}
+          >
+            <View style={ms.logoBox}>
+              <MaterialCommunityIcons
+                name="file-document-outline"
+                size={18}
+                color="#fff"
+              />
+            </View>
+            <Text style={ms.logoText}>SmartDocs</Text>
+          </TouchableOpacity>
+
+          <View style={ms.headerRight}>
+            <TouchableOpacity
+              style={ms.iconBtn}
+              onPress={() => navigation.navigate('Notifications')}
+            >
+              <Feather name="bell" size={20} color="#374151" />
+              {alertCount > 0 && <View style={ms.notifDot} />}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={ms.iconBtn}
+              onPress={async () => {
+                await signOut();
+                navigation.navigate('Auth');
+              }}
+            >
+              <Feather name="log-out" size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Scroll area */}
+        <ScrollView
+          contentContainerStyle={ms.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={ms.contentInner}>{children}</View>
+        </ScrollView>
+
+        {/* Bottom tab bar */}
+        <View style={ms.bottomBar}>
+          {MOBILE_NAV.map((l) => {
+            const active = route.name === l.to;
+            return (
+              <TouchableOpacity
+                key={l.to}
+                style={ms.tabItem}
+                onPress={() => navigation.navigate(l.to)}
+              >
+                <View
+                  style={[ms.tabIcon, active && ms.tabIconActive]}
+                >
+                  <MaterialCommunityIcons
+                    name={l.icon}
+                    size={20}
+                    color={active ? '#3B82F6' : '#6B7280'}
+                  />
+                </View>
+                <Text
+                  style={[ms.tabLabel, active && ms.tabLabelActive]}
+                >
+                  {l.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
+// ─── Web styles ───────────────────────────────────────────────────────────────
+
+const ws = StyleSheet.create({
+  root: {
     flex: 1,
-    backgroundColor: '#F1F5F9', // Slightly darker background for the "gutter" area
-    alignItems: 'center',
-  },
-  responsiveWrapper: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#F8FAFC', // App's actual background
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  header: {
     flexDirection: 'row',
-    height: 60,
+    backgroundColor: '#F8FAFC',
+  },
+  sidebar: {
+    width: 220,
+    backgroundColor: '#FFFFFF',
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
+    flexDirection: 'column',
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    marginBottom: 4,
+  },
+  logoBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E293B',
+    letterSpacing: -0.3,
+  },
+  navScroll: { flex: 1 },
+  navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginHorizontal: 8,
+    borderRadius: 8,
+    gap: 10,
+    marginBottom: 2,
+  },
+  navItemActive: { backgroundColor: '#EFF6FF' },
+  navLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  navLabelActive: { color: '#3B82F6', fontWeight: '600' },
+  subList: { paddingLeft: 36, paddingBottom: 6 },
+  subItem: { paddingVertical: 5, paddingHorizontal: 8 },
+  subText: { fontSize: 12.5, fontWeight: '500' },
+  sidebarFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 8,
+  },
+  main: { flex: 1, flexDirection: 'column' },
+  header: {
+    height: 56,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 2,
+  },
+  badgeText: { fontSize: 9, color: '#FFFFFF', fontWeight: '700' },
+  userChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 20,
+    paddingLeft: 4,
+    paddingRight: 12,
+    paddingVertical: 4,
+    gap: 8,
+    marginLeft: 4,
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  userName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1E293B',
+    maxWidth: 120,
+  },
+  scrollArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  pageContent: { padding: 32, paddingBottom: 60 },
+});
+
+// ─── Mobile styles ────────────────────────────────────────────────────────────
+
+const ms = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  wrapper: { flex: 1, position: 'relative' },
+  header: {
+    height: 58,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
@@ -133,45 +469,26 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
-  logoContainer: {
-    flexDirection: 'row',
+  logoRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  logoBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
-    flex: 1,
-  },
-  logoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: '#3b82f6',
     justifyContent: 'center',
-    alignItems: 'center',
+    marginRight: 10,
   },
-  logoTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  logoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  logoSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionButton: {
+  logoText: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  iconBtn: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  notificationDot: {
+  notifDot: {
     position: 'absolute',
     top: 10,
     right: 10,
@@ -182,73 +499,35 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  mainContent: {
-    flexGrow: 1,
-    paddingBottom: 100, // Extra space for bottom nav
-  },
-  contentWrapper: {
+  scrollContent: { flexGrow: 1, paddingBottom: 90 },
+  contentInner: {
     width: '100%',
-    maxWidth: 1000,
+    maxWidth: 960,
     alignSelf: 'center',
     paddingHorizontal: 16,
     paddingVertical: 20,
   },
-  bottomNav: {
+  bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    height: Platform.OS === 'ios' ? 84 : 72,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    height: Platform.OS === 'ios' ? 84 : 74,
   },
-  navGrid: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navIconContainer: {
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabIcon: {
     width: 36,
     height: 36,
     borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  navIconActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  navLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  navLabelActive: {
-    color: '#3B82F6',
-  },
-  navBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  navBadgeText: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
+  tabIconActive: { backgroundColor: 'rgba(59,130,246,0.1)' },
+  tabLabel: { fontSize: 11, fontWeight: '500', color: '#6B7280', marginTop: 2 },
+  tabLabelActive: { color: '#3B82F6' },
 });

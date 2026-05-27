@@ -62,4 +62,5 @@ export type DocumentRow = {
   file_url: string | null;
   source: string | null;
   created_at: string;
+  tags?: string[] | null;
 };

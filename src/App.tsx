@@ -15,6 +15,9 @@ import Family from "./pages/Family";
 import Documents from "./pages/Documents";
 import ProfilePage from "./pages/ProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const Stack = createNativeStackNavigator();
@@ -74,6 +77,30 @@ const App = () => {
                 {(props: any) => (
                   <ProtectedRoute>
                     <NotificationsPage {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+
+              <Stack.Screen name="Analytics">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Analytics {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+
+              <Stack.Screen name="Settings">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Settings {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+
+              <Stack.Screen name="Help">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Help {...props} />
                   </ProtectedRoute>
                 )}
               </Stack.Screen>

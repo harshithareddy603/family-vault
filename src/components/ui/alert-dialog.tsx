@@ -1,6 +1,5 @@
 import * as React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ViewStyle, TextStyle } from "react-native";
-import { buttonVariants } from "@/components/ui/button";
 
 const AlertDialog = ({ open, onOpenChange, children }: { 
   open?: boolean; 
