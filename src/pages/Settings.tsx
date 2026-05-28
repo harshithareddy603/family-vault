@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   View,
   Text,
@@ -10,6 +11,8 @@ import {
 import React, { useState } from 'react';
 import { AppLayout } from '../components/AppLayout';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigation } from '@react-navigation/native';
 
 // ─── Custom Select Dropdown ──────────────────────────────────────────────────
 
@@ -170,6 +173,9 @@ const ck = StyleSheet.create({
 // ─── Main Settings Screen ──────────────────────────────────────────────────────
 
 const Settings = () => {
+  const { signOut } = useAuth();
+  const navigation = useNavigation<any>();
+
   // App Preferences Form States
   const [lang, setLang] = useState('English');
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY');
@@ -192,6 +198,20 @@ const Settings = () => {
         Alert.alert('Success', 'Settings saved successfully!');
       }
     }, 800);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigation.navigate('Auth');
+    } catch (e: any) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      if (Platform.OS === 'web') {
+        alert('Logout failed: ' + msg);
+      } else {
+        Alert.alert('Error', 'Logout failed: ' + msg);
+      }
+    }
   };
 
   return (
@@ -264,6 +284,16 @@ const Settings = () => {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Separator */}
+        <View style={s.separator} />
+
+        {/* Account Options */}
+        <Text style={s.sectionTitle}>Account Actions</Text>
+        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <MaterialCommunityIcons name="logout" size={16} color="#EF4444" />
+          <Text style={s.logoutBtnText}>Logout Session</Text>
+        </TouchableOpacity>
       </View>
     </AppLayout>
   );
@@ -320,9 +350,27 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
     marginTop: 8,
+    marginBottom: 4,
   },
   saveBtnText: {
     color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderRadius: 8,
+    paddingVertical: 12,
+    gap: 8,
+    marginTop: 4,
+  },
+  logoutBtnText: {
+    color: '#EF4444',
     fontSize: 13.5,
     fontWeight: '600',
   },
