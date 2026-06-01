@@ -38,16 +38,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const formData = new FormData();
-    formData.append('file', {
-      uri: (photo as any).uri,
-      name: fileName,
-      type: (photo as any).type || `image/${fileExt}`,
-    } as any);
+    let fileToUpload;
+    try {
+      const response = await fetch((photo as any).uri);
+      fileToUpload = await response.blob();
+    } catch (e) {
+      console.error("Failed to fetch photo blob, using raw photo object as fallback:", e);
+      fileToUpload = photo;
+    }
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, formData);
+      .upload(filePath, fileToUpload, {
+        contentType: (photo as any).type || `image/${fileExt}`,
+        upsert: true
+      });
 
     if (uploadError) {
       return { error: new Error(`Failed to upload photo: ${uploadError.message}`) };
