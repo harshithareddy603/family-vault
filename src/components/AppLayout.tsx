@@ -110,7 +110,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                     onPress={() => {
                       if (item.sub) {
                         setDocsExpanded((v) => !v);
-                        navigation.navigate('Documents');
+                        navigation.navigate('Documents', { category: 'All' });
                       } else {
                         navigation.navigate(item.key);
                       }
@@ -142,7 +142,17 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                         <TouchableOpacity
                           key={sub.label}
                           style={ws.subItem}
-                          onPress={() => navigation.navigate('Documents')}
+                          onPress={() => {
+                            const mapping: Record<string, string> = {
+                              IDs: 'ID',
+                              Certificates: 'Certificate',
+                              Insurance: 'Insurance',
+                              Medical: 'Medical',
+                              Licenses: 'License',
+                              Resumes: 'Resume',
+                            };
+                            navigation.navigate('Documents', { category: mapping[sub.label] || 'All' });
+                          }}
                         >
                           <Text style={[ws.subText, { color: sub.color }]}>
                             {sub.label}

@@ -13,6 +13,7 @@ import { Checkbox, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Linking from 'expo-linking';
 import type { DocumentRow } from "../services/supabase";
+import { useRoute } from '@react-navigation/native';
 
 const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
@@ -20,6 +21,7 @@ const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 const Documents = () => {
   const { members } = useFamily();
   const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
+  const route = useRoute<any>();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -43,6 +45,14 @@ const Documents = () => {
   const [sortBy, setSortBy] = useState("newest_first");
   const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("all");
   const [familyMemberFilter, setFamilyMemberFilter] = useState<string>("all");
+
+  useEffect(() => {
+    if (route.params?.category) {
+      setActiveFilter(route.params.category);
+    } else {
+      setActiveFilter("All");
+    }
+  }, [route.params?.category]);
 
   const reset = () => {
     setName(""); setCategory("ID"); setExpiry(""); setOwner("self"); setFile(null);
@@ -167,19 +177,7 @@ const Documents = () => {
           />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-          {FILTER_CHIPS.map(chip => (
-            <TouchableOpacity 
-              key={chip}
-              style={[styles.filterChip, activeFilter === chip && styles.activeFilterChip]}
-              onPress={() => setActiveFilter(chip)}
-            >
-              <Text style={[styles.filterChipText, activeFilter === chip && styles.activeFilterChipText]}>
-                {chip}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+
 
         {loading ? (
           <View style={styles.centerContent}>
