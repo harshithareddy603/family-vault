@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { Checkbox } from 'react-native-paper';
 import { useFamily } from "../hooks/useFamily";
 import { useDocuments } from "../hooks/useDocuments";
 import type { DocumentRow } from "../services/supabase";
 
-const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
+const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 
 interface EditDocumentDrawerProps {
   document: DocumentRow | null;
@@ -78,13 +78,41 @@ export const EditDocumentDrawer = ({ document, isOpen, onClose }: EditDocumentDr
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.label}>Category</Text>
-                {/* Simplified picker for now, could be a real Picker component */}
-                <TextInput 
-                  style={styles.input} 
-                  value={category} 
-                  onChangeText={setCategory}
-                  placeholder="Category"
-                />
+                {Platform.OS === 'web' ? (
+                  <select
+                    value={category}
+                    onChange={(e: any) => setCategory(e.target.value)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                      borderRadius: 12,
+                      paddingLeft: 16,
+                      paddingRight: 16,
+                      paddingTop: 12,
+                      paddingBottom: 12,
+                      fontSize: 16,
+                      backgroundColor: '#F8FAFC',
+                      outline: 'none',
+                      width: '100%',
+                      height: 50,
+                      cursor: 'pointer',
+                      color: '#0F172A',
+                    }}
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <TextInput 
+                    style={styles.input} 
+                    value={category} 
+                    onChangeText={setCategory}
+                    placeholder="Category"
+                  />
+                )}
               </View>
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.label}>Expiry</Text>

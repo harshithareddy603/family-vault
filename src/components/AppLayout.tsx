@@ -31,15 +31,12 @@ const FOOTER_NAV = [
 ];
 
 const DOC_SUBS = [
-  { label: 'All Documents', color: '#1E293B' },
-  { label: 'Upload',        color: '#10B981' },
   { label: 'IDs',           color: '#3B82F6' },
   { label: 'Certificates',  color: '#8B5CF6' },
   { label: 'Insurance',     color: '#F97316' },
   { label: 'Medical',       color: '#EF4444' },
   { label: 'Licenses',      color: '#06B6D4' },
   { label: 'Resumes',       color: '#6366F1' },
-  { label: 'Archive',       color: '#94A3B8' },
 ];
 
 const MOBILE_NAV = [

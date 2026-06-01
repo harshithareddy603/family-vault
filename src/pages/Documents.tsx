@@ -14,7 +14,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Linking from 'expo-linking';
 import type { DocumentRow } from "../services/supabase";
 
-const CATEGORIES = ["ID", "Passport", "License", "Insurance", "Medical", "Education", "Property", "Other"];
+const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
@@ -317,7 +317,36 @@ const Documents = () => {
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Category</Text>
-                  <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="ID, License..." />
+                  {Platform.OS === 'web' ? (
+                    <select
+                      value={category}
+                      onChange={(e: any) => setCategory(e.target.value)}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#E2E8F0',
+                        borderRadius: 12,
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        paddingTop: 12,
+                        paddingBottom: 12,
+                        fontSize: 16,
+                        backgroundColor: '#F8FAFC',
+                        outline: 'none',
+                        width: '100%',
+                        height: 50,
+                        cursor: 'pointer',
+                        color: '#0F172A',
+                      }}
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="ID, License..." />
+                  )}
                 </View>
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                   <Text style={styles.label}>Expiry</Text>
