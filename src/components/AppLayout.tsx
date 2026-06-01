@@ -6,6 +6,7 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
+  Image,
 } from 'react-native';
 import React, { ReactNode, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -218,8 +219,16 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 style={ws.userChip}
                 onPress={() => navigation.navigate('Profile')}
               >
-                <View style={ws.avatar}>
-                  <Text style={ws.avatarText}>{initials}</Text>
+                <View style={[ws.avatar, { overflow: 'hidden' }]}>
+                  {user?.user_metadata?.avatar_url ? (
+                    <Image
+                      source={{ uri: user.user_metadata.avatar_url }}
+                      style={{ width: 28, height: 28 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={ws.avatarText}>{initials}</Text>
+                  )}
                 </View>
                 <Text style={ws.userName} numberOfLines={1}>
                   {fullName}
