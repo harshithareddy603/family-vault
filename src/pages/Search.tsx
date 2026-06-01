@@ -199,11 +199,6 @@ const Search = () => {
   const [query, setQuery]       = useState('');
   const [category, setCategory] = useState('All Categories');
   const [status, setStatus]     = useState('All Status');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo]     = useState('');
-  const [tags, setTags]         = useState('');
-  const [priorityOnly, setPriority] = useState(false);
-  const [withExpiry, setWithExpiry] = useState(false);
   const [searched, setSearched] = useState(false);
   const [results, setResults]   = useState<DocumentRow[]>([]);
 
@@ -217,8 +212,7 @@ const Search = () => {
       filtered = filtered.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q) ||
-          (d.tags ?? []).some((t: string) => t.toLowerCase().includes(q)),
+          d.category.toLowerCase().includes(q)
       );
     }
 
@@ -231,34 +225,6 @@ const Search = () => {
       if (mapped) filtered = filtered.filter((d) => d.status === mapped);
     }
 
-    if (dateFrom) {
-      const from = new Date(dateFrom).getTime();
-      filtered = filtered.filter(
-        (d) => new Date(d.created_at).getTime() >= from,
-      );
-    }
-    if (dateTo) {
-      const to = new Date(dateTo).getTime();
-      filtered = filtered.filter(
-        (d) => new Date(d.created_at).getTime() <= to,
-      );
-    }
-
-    if (tags.trim()) {
-      const t = tags.toLowerCase();
-      filtered = filtered.filter((d) =>
-        (d.tags ?? []).some((tag: string) => tag.toLowerCase().includes(t)),
-      );
-    }
-
-    if (priorityOnly) {
-      filtered = filtered.filter((d) => d.status !== 'safe');
-    }
-
-    if (withExpiry) {
-      filtered = filtered.filter((d) => !!d.expiry_date);
-    }
-
     setResults(filtered);
     setSearched(true);
   };
@@ -267,11 +233,6 @@ const Search = () => {
     setQuery('');
     setCategory('All Categories');
     setStatus('All Status');
-    setDateFrom('');
-    setDateTo('');
-    setTags('');
-    setPriority(false);
-    setWithExpiry(false);
     setSearched(false);
     setResults([]);
   };
@@ -290,7 +251,7 @@ const Search = () => {
             <Feather name="search" size={14} color="#94A3B8" style={s.inputIcon} />
             <TextInput
               style={s.input}
-              placeholder="Search documents..."
+              placeholder="Search documents by name..."
               placeholderTextColor="#94A3B8"
               value={query}
               onChangeText={setQuery}
@@ -316,75 +277,6 @@ const Search = () => {
               onChange={setStatus}
             />
           </View>
-        </View>
-
-        {/* Date From + Date To row */}
-        <View style={[s.row2, isWeb && s.row2Wide]}>
-          <View style={s.halfCol}>
-            <Text style={s.fieldLabel}>Upload Date From</Text>
-            <View style={s.inputWrap}>
-              <MaterialCommunityIcons
-                name="calendar-outline"
-                size={15}
-                color="#94A3B8"
-                style={s.inputIcon}
-              />
-              <TextInput
-                style={s.input}
-                placeholder="mm/dd/yyyy"
-                placeholderTextColor="#94A3B8"
-                value={dateFrom}
-                onChangeText={setDateFrom}
-              />
-            </View>
-          </View>
-          <View style={s.halfCol}>
-            <Text style={s.fieldLabel}>Upload Date To</Text>
-            <View style={s.inputWrap}>
-              <MaterialCommunityIcons
-                name="calendar-outline"
-                size={15}
-                color="#94A3B8"
-                style={s.inputIcon}
-              />
-              <TextInput
-                style={s.input}
-                placeholder="mm/dd/yyyy"
-                placeholderTextColor="#94A3B8"
-                value={dateTo}
-                onChangeText={setDateTo}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Tags */}
-        <View style={s.fieldGroup}>
-          <Text style={s.fieldLabel}>Tags</Text>
-          <View style={s.inputWrap}>
-            <Feather name="tag" size={14} color="#94A3B8" style={s.inputIcon} />
-            <TextInput
-              style={s.input}
-              placeholder="Search by tags..."
-              placeholderTextColor="#94A3B8"
-              value={tags}
-              onChangeText={setTags}
-            />
-          </View>
-        </View>
-
-        {/* Checkboxes */}
-        <View style={s.checkRow}>
-          <CheckItem
-            label="Priority documents only"
-            value={priorityOnly}
-            onChange={setPriority}
-          />
-          <CheckItem
-            label="With expiry dates"
-            value={withExpiry}
-            onChange={setWithExpiry}
-          />
         </View>
 
         {/* Buttons */}
