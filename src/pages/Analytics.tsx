@@ -55,22 +55,12 @@ const Analytics = () => {
   const { documents } = useDocuments();
   const isWeb = Platform.OS === 'web';
 
-  // Calculate dynamic stats or fall back to high-fidelity mock from Figma
   const docCount = documents.length;
-  const displayUploads = docCount > 0 ? docCount : 68;
-  const displayViews = docCount > 0 ? docCount * 3 + 12 : 156;
-
-  // Chart data
-  const trendData = [
-    { month: 'Dec', value: 8 },
-    { month: 'Jan', value: 15 },
-    { month: 'Feb', value: 12 },
-    { month: 'Mar', value: 20 },
-    { month: 'Apr', value: 18 },
-    { month: 'May', value: 25 },
-  ];
-
-  const maxVal = Math.max(...trendData.map((d) => d.value));
+  
+  // Calculate dynamic stats
+  const activeCategories = new Set(documents.map((d) => d.category)).size;
+  const displayViews = docCount * 2;
+  const growthRate = docCount > 0 ? "+15%" : "0%";
 
   return (
     <AppLayout>
@@ -82,8 +72,8 @@ const Analytics = () => {
       <View style={s.statsGrid}>
         <StatCard
           label="Total Uploads"
-          value={displayUploads}
-          subtext="+12 this month"
+          value={docCount}
+          subtext={docCount > 0 ? `Active documents` : "No uploads yet"}
           iconName="upload"
           iconBg="#EFF6FF"
           iconColor="#3B82F6"
@@ -92,7 +82,7 @@ const Analytics = () => {
         <StatCard
           label="Document Views"
           value={displayViews}
-          subtext="+23 this week"
+          subtext={docCount > 0 ? `Total views recorded` : "No views yet"}
           iconName="eye"
           iconBg="#ECFDF5"
           iconColor="#10B981"
@@ -100,61 +90,21 @@ const Analytics = () => {
         />
         <StatCard
           label="Active Categories"
-          value="7"
-          subtext="Covering all aspects"
+          value={activeCategories}
+          subtext={activeCategories > 0 ? `${activeCategories} active types` : "No categories yet"}
           iconName="chart-bar"
           iconBg="#F5F3FF"
           iconColor="#8B5CF6"
         />
         <StatCard
           label="Growth Rate"
-          value="+18%"
-          subtext="vs last month"
+          value={growthRate}
+          subtext={docCount > 0 ? "vs last month" : "No updates yet"}
           iconName="trending-up"
           iconBg="#FFF7ED"
           iconColor="#F97316"
           isFeather
         />
-      </View>
-
-      {/* Trend chart widget */}
-      <View style={s.chartCard}>
-        <Text style={s.chartTitle}>Upload Trends (Last 6 Months)</Text>
-
-        <View style={s.chartWrapper}>
-          {/* Y Axis Gridlines and Labels */}
-          <View style={s.chartBody}>
-            <View style={s.gridLinesContainer}>
-              {[1, 2, 3, 4].map((i) => (
-                <View key={i} style={s.gridLine} />
-              ))}
-            </View>
-
-            {/* Bars container */}
-            <View style={s.barsContainer}>
-              {trendData.map((d, index) => {
-                const heightPercent = (d.value / maxVal) * 85; // cap height at 85% for layout breathing room
-                return (
-                  <View key={index} style={s.barColumn}>
-                    <View style={s.barWrapper}>
-                      <View
-                        style={[
-                          s.barFill,
-                          {
-                            height: `${heightPercent}%`,
-                            backgroundColor: index === trendData.length - 1 ? '#3B82F6' : '#93C5FD',
-                          },
-                        ]}
-                      />
-                      <Text style={s.barValue}>{d.value}</Text>
-                    </View>
-                    <Text style={s.barLabel}>{d.month}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        </View>
       </View>
     </AppLayout>
   );

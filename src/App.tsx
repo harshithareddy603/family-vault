@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import Search from "./pages/Search";
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -85,6 +86,14 @@ const App = () => {
                 {(props: any) => (
                   <ProtectedRoute>
                     <Analytics {...props} />
+                  </ProtectedRoute>
+                )}
+              </Stack.Screen>
+
+              <Stack.Screen name="Search">
+                {(props: any) => (
+                  <ProtectedRoute>
+                    <Search {...props} />
                   </ProtectedRoute>
                 )}
               </Stack.Screen>
